@@ -28,8 +28,22 @@ export interface Game {
   level?: number;
   levelName?: string;
   requiredWins?: number;
+  // Anti-cheat fields
+  moveHistory?: MoveRecord[];
+  finalized?: boolean;
+  finalizedAt?: string;
+  finalScore?: number;
   createdAt?: any; // Firestore timestamp
   lastUpdate?: any; // Firestore timestamp
+}
+
+// Move record for anti-cheat tracking
+export interface MoveRecord {
+  player: Player;
+  position: number;
+  timestamp: string;
+  moveNumber: number;
+  clientId: string;
 }
 
 // Player data

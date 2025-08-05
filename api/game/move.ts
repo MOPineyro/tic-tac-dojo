@@ -118,6 +118,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Store move history for anti-cheat validation
+    const moveHistory = gameState.moveHistory || [];
+    moveHistory.push({
+      player,
+      position,
+      timestamp: new Date().toISOString(),
+      moveNumber: gameState.moveCount + 1,
+      clientId: req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown'
+    });
+
     // Update game state
     const updatedGameData = {
       grid: newGrid,
@@ -125,6 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       gameState: newGameState,
       winner,
       moveCount: gameState.moveCount + 1,
+      moveHistory: moveHistory,
       finishedAt: winner ? new Date().toISOString() : null
     };
 

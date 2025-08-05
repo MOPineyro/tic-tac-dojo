@@ -3,6 +3,7 @@ import { initializeFirebase, getPlayerData, getGameState } from '../_lib/databas
 import { validateSchema, sanitizeInput } from '../_lib/validation';
 import { updatePlayerProgress, getCurrentLevel, getNextLevel } from '../_lib/levelSystem';
 import { AdvancedScoringSystem } from '../_lib/scoring';
+import { AntiCheatValidator } from '../_lib/antiCheat';
 import type { PlayerData, Player } from '../_lib/types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -36,15 +37,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Access denied - not your game' });
     }
 
+    // Only allow finalization of finished games
+    if (gameState.gameState !== 'finished') {
+      return res.status(400).json({ error: 'Game is not finished yet' });
+    }
+
+    // Prevent double-processing by checking if game was already finalized
+    if (gameState.finalized) {
+      return res.status(400).json({ error: 'Game already finalized' });
+    }
+
     // Extract authoritative game data from database
     const level = gameState.level || 1;
     const gridSize = gameState.gridSize || 3;
     const finalGrid = gameState.grid;
     const winner = gameState.winner;
+    const moveHistory = gameState.moveHistory || [];
+
+    // ANTI-CHEAT: Validate game integrity
+    const cheatCheck = AntiCheatValidator.validateGameIntegrity(finalGrid, moveHistory, gridSize);
+    
+    if (!cheatCheck.isValid) {
+      console.warn(`CHEAT DETECTED for player ${playerId} in game ${gameId}:`, cheatCheck.violations);
+      
+      // Log the incident but don't block legitimate players
+      const db = await initializeFirebase();
+      await db.collection('cheatReports').add({
+        playerId,
+        gameId,
+        violations: cheatCheck.violations,
+        suspiciousActivity: cheatCheck.suspiciousActivity,
+        riskScore: cheatCheck.riskScore,
+        timestamp: new Date().toISOString(),
+        gameState: {
+          grid: finalGrid,
+          moveHistory,
+          level,
+          winner
+        }
+      });
+
+      // For high-risk violations, reject the game
+      if (cheatCheck.riskScore > 70) {
+        return res.status(400).json({ 
+          error: 'Game validation failed',
+          message: 'Irregular game patterns detected. Please play fair!'
+        });
+      }
+    }
     
     // Determine if the human player won based on server-side game state
     const humanPlayer: Player = 'X';
     const won = winner === humanPlayer;
+    const isDraw = winner === 'DRAW';
 
     // Reconstruct move history from game state (simplified for now)
     const playerMoves: number[] = [];
@@ -66,7 +111,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get level data
     const levelData = getCurrentLevel({
       playerId: playerData.playerId,
-      currentLevel: level,
+      currentLevel: playerData.currentLevel,
       levelProgress: playerData.levelProgress,
       totalScore: playerData.totalScore,
       gamesPlayed: playerData.gamesPlayed,
@@ -87,7 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       level,
       won,
       gameAnalysis,
-      timeElapsed || 60000
+      timeElapsed
     );
 
     // Update player progress
@@ -107,25 +152,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Update database
     const db = await initializeFirebase();
-    const playerRef = db.collection('players').doc(playerId);
+    const batch = db.batch();
     
-    await playerRef.update({
+    // Update player data
+    const playerRef = db.collection('players').doc(playerId);
+    batch.update(playerRef, {
       currentLevel: progressResult.progress.currentLevel,
       levelProgress: progressResult.progress.levelProgress,
       totalScore: progressResult.progress.totalScore,
       gamesPlayed: progressResult.progress.gamesPlayed,
       achievements: progressResult.progress.achievements,
       wins: won ? (playerData.wins || 0) + 1 : playerData.wins || 0,
-      losses: !won ? (playerData.losses || 0) + 1 : playerData.losses || 0,
+      losses: (!won && !isDraw) ? (playerData.losses || 0) + 1 : playerData.losses || 0,
+      draws: isDraw ? (playerData.draws || 0) + 1 : playerData.draws || 0,
       lastActive: new Date().toISOString(),
       ...(progressResult.completed ? { completedAt: progressResult.progress.completedAt } : {})
     });
+
+    // Mark game as finalized to prevent double-processing
+    const gameRef = db.collection('games').doc(gameId);
+    batch.update(gameRef, {
+      finalized: true,
+      finalizedAt: new Date().toISOString(),
+      finalScore: scoreBreakdown.totalScore
+    });
+
+    // Store score record for leaderboard
+    const scoreRef = db.collection('scores').doc();
+    batch.set(scoreRef, {
+      playerId,
+      gameId,
+      level,
+      won,
+      isDraw,
+      scoreBreakdown,
+      gameAnalysis,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date()
+    });
+
+    // Commit all updates atomically
+    await batch.commit();
 
     // Prepare response
     const response: any = {
       success: true,
       result: {
         won,
+        isDraw,
         score: scoreBreakdown.totalScore,
         scoreBreakdown,
         gameAnalysis,
@@ -167,9 +241,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.json(response);
 
   } catch (error) {
-    console.error('Game completion error:', error);
+    console.error('Game finalization error:', error);
     res.status(500).json({ 
-      error: 'Failed to complete game',
+      error: 'Failed to finalize game',
       message: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Unknown error') : 'Internal server error'
     });
   }
