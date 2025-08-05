@@ -1,5 +1,6 @@
 import { validateSchema, sanitizeInput } from '../_lib/validation';
 import { getGameState } from '../_lib/database';
+import { GAME_LEVELS } from '../_lib/levelSystem';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { AICalculateRequest, AICalculateResponse, APIError, Player, Difficulty } from '../_lib/types';
 
@@ -162,8 +163,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Not AI turn' });
     }
 
-    // Calculate AI move
-    const ai = new AIPlayer(gameState.difficulty || difficulty);
+    // Get level-specific AI settings
+    const gameLevel = gameState.level || 1;
+    const levelData = GAME_LEVELS[gameLevel - 1];
+    const aiDifficulty = levelData?.difficulty || gameState.difficulty || difficulty;
+    
+    // Calculate AI move with level-specific depth
+    const ai = new AIPlayer(aiDifficulty);
+    if (levelData?.aiDepth) {
+      ai.maxDepth = levelData.aiDepth;
+    }
+    
     const move = ai.getMove(gameState.grid, gameState.gridSize, aiPlayer, humanPlayer);
 
     if (move === null || move === undefined) {

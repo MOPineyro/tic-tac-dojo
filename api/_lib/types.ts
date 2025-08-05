@@ -24,6 +24,10 @@ export interface Game {
   moveCount: number;
   startedAt: string | null;
   finishedAt: string | null;
+  // Level progression fields
+  level?: number;
+  levelName?: string;
+  requiredWins?: number;
   createdAt?: any; // Firestore timestamp
   lastUpdate?: any; // Firestore timestamp
 }
@@ -40,6 +44,12 @@ export interface PlayerData {
   wins: number;
   losses: number;
   draws: number;
+  // Level progression
+  currentLevel: number;
+  levelProgress: { [level: number]: { wins: number; losses: number; completed: boolean } };
+  totalScore: number;
+  achievements: string[];
+  completedAt?: string;
 }
 
 // Vercel API types
