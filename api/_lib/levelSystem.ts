@@ -10,6 +10,10 @@ export interface Level {
   requiredWins: number; // Number of wins needed to advance
   scoreMultiplier: number;
   unlockMessage: string;
+  // Advanced AI behavior
+  optimalPlayPercentage: number; // 0-100% chance of making optimal move
+  aiStrategy: 'basic' | 'pattern' | 'trap' | 'defensive' | 'psychological';
+  behaviorDescription: string;
 }
 
 export const GAME_LEVELS: Level[] = [
@@ -22,51 +26,66 @@ export const GAME_LEVELS: Level[] = [
     aiDepth: 2,
     requiredWins: 1,
     scoreMultiplier: 1.0,
-    unlockMessage: "Welcome to Tic-Tac-Dojo! Beat the Novice AI to advance."
+    unlockMessage: "Welcome to Tic-Tac-Dojo! Beat the Novice AI to advance.",
+    optimalPlayPercentage: 30,
+    aiStrategy: 'basic',
+    behaviorDescription: "Makes random moves 70% of the time, optimal moves 30% of the time"
   },
   {
     level: 2,
     name: "Apprentice", 
     difficulty: 'medium',
-    description: "Face a more strategic opponent",
+    description: "Face an AI with pattern recognition",
     gridSize: 3,
     aiDepth: 4,
     requiredWins: 2,
     scoreMultiplier: 1.5,
-    unlockMessage: "Well done! The Apprentice level awaits. Win 2 games to advance."
+    unlockMessage: "Well done! The Apprentice level awaits. Win 2 games to advance.",
+    optimalPlayPercentage: 50,
+    aiStrategy: 'pattern',
+    behaviorDescription: "Recognizes basic patterns and plays optimally 50% of the time"
   },
   {
     level: 3,
     name: "Warrior",
     difficulty: 'hard',
-    description: "Battle an advanced AI with tactical thinking",
+    description: "Battle an AI that sets tactical traps",
     gridSize: 3,
     aiDepth: 6,
     requiredWins: 3,
     scoreMultiplier: 2.0,
-    unlockMessage: "Impressive! Face the Warrior AI. Win 3 games to prove your skill."
+    unlockMessage: "Impressive! Face the Warrior AI. Win 3 games to prove your skill.",
+    optimalPlayPercentage: 70,
+    aiStrategy: 'trap',
+    behaviorDescription: "Sets up winning traps and plays optimally 70% of the time"
   },
   {
     level: 4,
     name: "Master",
     difficulty: 'impossible',
-    description: "Challenge a near-perfect AI opponent",
+    description: "Challenge an AI with defensive mastery",
     gridSize: 4, // Increased grid size for more complexity
     aiDepth: 8,
     requiredWins: 2,
     scoreMultiplier: 3.0,
-    unlockMessage: "Incredible! The Master level with 4x4 grid. Win 2 games to reach the final stage."
+    unlockMessage: "Incredible! The Master level with 4x4 grid. Win 2 games to reach the final stage.",
+    optimalPlayPercentage: 85,
+    aiStrategy: 'defensive',
+    behaviorDescription: "Masters defensive play and blocks all threats with 85% optimal moves"
   },
   {
     level: 5,
     name: "Grandmaster",
     difficulty: 'master' as any,
-    description: "Face the ultimate AI challenge with perfect play",
+    description: "Face an AI with psychological warfare tactics",
     gridSize: 4,
     aiDepth: Infinity,
     requiredWins: 1,
     scoreMultiplier: 5.0,
-    unlockMessage: "Final challenge! Defeat the Grandmaster to complete your journey."
+    unlockMessage: "Final challenge! Defeat the Grandmaster to complete your journey.",
+    optimalPlayPercentage: 95,
+    aiStrategy: 'psychological',
+    behaviorDescription: "Uses fake mistakes and mind games while playing optimally 95% of the time"
   }
 ];
 
