@@ -3,6 +3,7 @@ import { validateSchema, schemas, sanitizeInput } from '../_lib/validation';
 import { getGameState, updateGameState } from '../_lib/database';
 import { verifyPlayerAccess, getClientIdentifier } from '../_lib/auth';
 import { LevelUnlockManager } from '../_lib/levelUnlock';
+import { AdvancedAIPlayer } from '../_lib/advancedAI';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { GameMoveRequest, GameMoveResponse, APIError, Player, GameState } from '../_lib/types';
 
@@ -178,7 +179,74 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     await updateGameState(gameId, updatedGameData);
 
-    // Return updated game state
+    // If it's an AI game and the next player is AI, automatically calculate and execute AI move
+    if (gameState.gameMode === 'ai' && nextPlayer === 'O' && !winner) {
+      try {
+        // Get the AI level and calculate move
+        const gameLevel = gameState.level || 1;
+        const advancedAI = new AdvancedAIPlayer(gameLevel);
+        const aiMove = advancedAI.getMove(newGrid, gameState.gridSize, 'O', 'X');
+
+        if (aiMove !== null && aiMove !== undefined) {
+          // Execute the AI move
+          const aiGrid = [...newGrid];
+          aiGrid[aiMove] = 'O';
+          
+          // Check for AI winner
+          const aiWinner = checkWinner(aiGrid, gameState.gridSize);
+          
+          // Update move history for AI
+          const aiMoveHistory = [...moveHistory];
+          aiMoveHistory.push({
+            player: 'O',
+            position: aiMove,
+            timestamp: new Date().toISOString(),
+            moveNumber: gameState.moveCount + 2,
+            clientId: 'ai_system'
+          });
+
+          // Update game state with AI move
+          const aiGameData = {
+            grid: aiGrid,
+            currentPlayer: aiWinner ? 'O' : 'X' as Player,
+            gameState: aiWinner ? 'finished' as GameState : 'active' as GameState,
+            winner: aiWinner,
+            moveCount: gameState.moveCount + 2,
+            moveHistory: aiMoveHistory,
+            timeRemaining,
+            lastMoveTime: new Date().toISOString(),
+            finishedAt: aiWinner ? new Date().toISOString() : null
+          };
+
+          await updateGameState(gameId, aiGameData);
+
+          // Return state after AI move
+          return res.json({
+            success: true,
+            gameState: {
+              ...gameState,
+              ...aiGameData
+            },
+            moveResult: {
+              position,
+              player,
+              winner: aiWinner,
+              gameOver: !!aiWinner
+            },
+            aiMove: {
+              player: 'O',
+              position: aiMove,
+              moveNumber: gameState.moveCount + 2
+            }
+          });
+        }
+      } catch (aiError) {
+        console.error('AI move execution error:', aiError);
+        // Continue with human move response if AI fails
+      }
+    }
+
+    // Return updated game state (human move only)
     res.json({
       success: true,
       gameState: {
