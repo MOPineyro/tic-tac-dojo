@@ -2,9 +2,72 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { initializeFirebase } from '../_lib/database';
 import { getClientIdentifier } from '../_lib/auth';
 import { GAME_LEVELS, getCurrentLevel, getNextLevel, canAdvanceToNextLevel, initializePlayerProgress } from '../_lib/levelSystem';
+import { LevelUnlockManager } from '../_lib/levelUnlock';
 import type { PlayerData } from '../_lib/types';
 
+// Handle level unlocking with codes
+async function handleLevelUnlock(req: VercelRequest, res: VercelResponse) {
+  try {
+    const { playerId, targetLevel, unlockCode } = req.body;
+
+    if (!playerId || !targetLevel || !unlockCode) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Get player data
+    const db = await initializeFirebase();
+    const playerDoc = await db.collection('players').doc(playerId).get();
+    
+    if (!playerDoc.exists) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+    
+    const playerData = { id: playerDoc.id, ...playerDoc.data() } as PlayerData;
+
+    // Attempt to unlock the level
+    const unlockResult = LevelUnlockManager.unlockLevelWithCode(
+      playerData,
+      targetLevel,
+      unlockCode
+    );
+
+    if (!unlockResult.success) {
+      return res.status(400).json({ 
+        error: unlockResult.message,
+        hints: LevelUnlockManager.getHintsForLevel(targetLevel)
+      });
+    }
+
+    // Update player's current level in database
+    await db.collection('players').doc(playerId).update({
+      currentLevel: unlockResult.newCurrentLevel,
+      lastActive: new Date().toISOString()
+    });
+
+    const levelData = GAME_LEVELS[targetLevel - 1];
+
+    res.json({
+      success: true,
+      message: unlockResult.message,
+      unlockedLevel: {
+        level: targetLevel,
+        name: levelData.name,
+        description: levelData.description
+      },
+      timer: LevelUnlockManager.getTimerConfig(targetLevel)
+    });
+
+  } catch (error) {
+    console.error('Level unlock error:', error);
+    res.status(500).json({ error: 'Failed to unlock level' });
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'POST') {
+    return handleLevelUnlock(req, res);
+  }
+  
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
