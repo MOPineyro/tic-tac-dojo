@@ -42,6 +42,56 @@ export interface Game {
   lastUpdate?: any; // Firestore timestamp
 }
 
+// Standardized game state response
+export interface StandardGameState {
+  id: string;
+  grid: (Player | null)[];
+  gridSize: number;
+  currentPlayer: Player;
+  gameState: GameState;
+  winner: Player | 'DRAW' | null;
+  moveCount: number;
+  gameMode: GameMode;
+  difficulty?: Difficulty;
+  level?: number;
+  levelName?: string;
+  requiredWins?: number;
+  totalTimeLimit?: number;
+  moveTimeLimit?: number;
+  timeRemaining?: number;
+  lastMoveTime?: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  finalized?: boolean;
+  playerCount: number;
+}
+
+// Helper function to format game state consistently
+export function formatGameState(game: Game): StandardGameState {
+  return {
+    id: game.id || '',
+    grid: game.grid,
+    gridSize: game.gridSize,
+    currentPlayer: game.currentPlayer,
+    gameState: game.gameState,
+    winner: game.winner,
+    moveCount: game.moveCount,
+    gameMode: game.gameMode,
+    difficulty: game.difficulty,
+    level: game.level,
+    levelName: game.levelName,
+    requiredWins: game.requiredWins,
+    totalTimeLimit: game.totalTimeLimit,
+    moveTimeLimit: game.moveTimeLimit,
+    timeRemaining: game.timeRemaining,
+    lastMoveTime: game.lastMoveTime,
+    startedAt: game.startedAt,
+    finishedAt: game.finishedAt,
+    finalized: game.finalized,
+    playerCount: game.players?.length || 0
+  };
+}
+
 // Move record for anti-cheat tracking
 export interface MoveRecord {
   player: Player;

@@ -1,5 +1,6 @@
 import { getGameState } from '../../_lib/database';
 import { getClientIdentifier } from '../../_lib/auth';
+import { formatGameState } from '../../_lib/types';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { APIError } from '../../_lib/types';
 
@@ -19,26 +20,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get game state
     const gameState = await getGameState(gameId);
     
-    // Return game state (public information only)
-    const publicGameState = {
-      id: gameState.id,
-      grid: gameState.grid,
-      gridSize: gameState.gridSize,
-      currentPlayer: gameState.currentPlayer,
-      gameState: gameState.gameState,
-      winner: gameState.winner,
-      moveCount: gameState.moveCount,
-      gameMode: gameState.gameMode,
-      difficulty: gameState.difficulty,
-      startedAt: gameState.startedAt,
-      finishedAt: gameState.finishedAt,
-      // Don't expose private player information
-      playerCount: gameState.players?.length || 0
-    };
-
+    // Return standardized game state
     res.json({
       success: true,
-      gameState: publicGameState
+      gameState: formatGameState(gameState)
     });
 
   } catch (error) {

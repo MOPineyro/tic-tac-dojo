@@ -321,47 +321,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /api/ai/calculate-move:
-    post:
-      summary: Calculate AI Move (Legacy)
-      description: |
-        **Note**: This endpoint is primarily for testing/debugging. In normal gameplay,
-        AI moves are automatically calculated and executed by the `/api/game/move` endpoint.
-
-        Calculates the optimal move for the AI player using advanced algorithms.
-      operationId: calculateAIMove
-      tags:
-        - AI Engine
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - gameId
-              properties:
-                gameId:
-                  type: string
-                  description: Game ID to calculate move for
-                  example: "game_123456789"
-      responses:
-        "200":
-          description: AI move calculated successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AIMoveResponse"
-        "400":
-          $ref: "#/components/responses/ValidationError"
-        "404":
-          description: Game not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          $ref: "#/components/responses/InternalError"
+  
 
   /api/player/progress:
     get:
@@ -687,7 +647,7 @@ components:
           type: boolean
           example: true
         gameData:
-          $ref: "#/components/schemas/GameData"
+          $ref: "#/components/schemas/StandardGameState"
         timer:
           $ref: "#/components/schemas/TimerConfig"
         levelInfo:
@@ -704,7 +664,7 @@ components:
           type: boolean
           example: true
         gameState:
-          $ref: "#/components/schemas/GameData"
+          $ref: "#/components/schemas/StandardGameState"
         moveResult:
           $ref: "#/components/schemas/MoveResult"
         aiMove:
@@ -721,7 +681,7 @@ components:
           type: boolean
           example: true
         gameState:
-          $ref: "#/components/schemas/GameData"
+          $ref: "#/components/schemas/StandardGameState"
 
     GameCompletionResponse:
       type: object
@@ -750,50 +710,7 @@ components:
           description: Whether player advanced to next level
           example: false
 
-    AIMoveResponse:
-      type: object
-      required:
-        - success
-        - move
-        - aiPlayer
-        - level
-        - strategy
-        - optimalPlayPercentage
-        - behaviorDescription
-        - explanation
-      properties:
-        success:
-          type: boolean
-          example: true
-        move:
-          type: integer
-          minimum: 0
-          maximum: 8
-          description: AI's chosen move position
-          example: 4
-        aiPlayer:
-          $ref: "#/components/schemas/Player"
-        level:
-          type: integer
-          minimum: 1
-          maximum: 5
-          example: 1
-        strategy:
-          type: string
-          enum: ["basic", "pattern", "trap", "defensive", "psychological"]
-          example: "basic"
-        optimalPlayPercentage:
-          type: integer
-          minimum: 0
-          maximum: 100
-          description: Percentage of time AI plays optimally
-          example: 30
-        behaviorDescription:
-          type: string
-          example: "Makes random moves 70% of the time, optimal moves 30% of the time"
-        explanation:
-          type: string
-          example: "Level 1 AI (Novice) chose position 4 using basic strategy"
+
 
     PlayerProgressResponse:
       type: object
@@ -874,7 +791,86 @@ components:
           type: integer
           example: 23
 
-    # Complex Object Schemas
+    # Complex Object Schemas  
+    StandardGameState:
+      type: object
+      required:
+        - id
+        - grid
+        - gridSize
+        - currentPlayer
+        - gameState
+        - moveCount
+        - gameMode
+        - startedAt
+        - playerCount
+      properties:
+        id:
+          type: string
+          example: "game_123456789"
+        grid:
+          $ref: "#/components/schemas/Grid"
+        gridSize:
+          type: integer
+          enum: [3]
+          example: 3
+        currentPlayer:
+          $ref: "#/components/schemas/Player"
+        gameState:
+          $ref: "#/components/schemas/GameState"
+        winner:
+          oneOf:
+            - $ref: "#/components/schemas/Player"
+            - type: string
+              enum: ["DRAW"]
+            - type: "null"
+        moveCount:
+          type: integer
+          example: 5
+        gameMode:
+          $ref: "#/components/schemas/GameMode"
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        levelName:
+          type: string
+          example: "Novice"
+        requiredWins:
+          type: integer
+          example: 3
+        totalTimeLimit:
+          type: integer
+          description: Total game time limit in seconds
+          example: 300
+        moveTimeLimit:
+          type: integer
+          description: Per-move time limit in seconds
+          example: 30
+        timeRemaining:
+          type: number
+          description: Remaining time in seconds
+          example: 285.5
+        lastMoveTime:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finalized:
+          type: boolean
+          example: false
+        playerCount:
+          type: integer
+          example: 2
+
     PlayerData:
       type: object
       required:
@@ -937,98 +933,7 @@ components:
           type: string
           format: date-time
 
-    GameData:
-      type: object
-      required:
-        - id
-        - grid
-        - gridSize
-        - currentPlayer
-        - gameState
-        - gameMode
-        - difficulty
-        - level
-        - levelName
-        - moveCount
-        - startedAt
-      properties:
-        id:
-          type: string
-          example: "game_123456789"
-        grid:
-          $ref: "#/components/schemas/Grid"
-        gridSize:
-          type: integer
-          enum: [3]
-          example: 3
-        currentPlayer:
-          $ref: "#/components/schemas/Player"
-        gameState:
-          $ref: "#/components/schemas/GameState"
-        winner:
-          oneOf:
-            - $ref: "#/components/schemas/Player"
-            - type: string
-              enum: ["DRAW"]
-            - type: "null"
-        gameMode:
-          $ref: "#/components/schemas/GameMode"
-        difficulty:
-          $ref: "#/components/schemas/Difficulty"
-        level:
-          type: integer
-          minimum: 1
-          maximum: 5
-          example: 1
-        levelName:
-          type: string
-          example: "Novice"
-        requiredWins:
-          type: integer
-          example: 3
-        moveCount:
-          type: integer
-          example: 5
-        moveHistory:
-          type: array
-          items:
-            $ref: "#/components/schemas/MoveRecord"
-        playerCount:
-          type: integer
-          enum: [2]
-          example: 2
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-          nullable: true
-        finalized:
-          type: boolean
-          example: false
-        finalizedAt:
-          type: string
-          format: date-time
-          nullable: true
-        finalScore:
-          type: integer
-          nullable: true
-        totalTimeLimit:
-          type: integer
-          description: Total game time limit in seconds
-          example: 300
-        moveTimeLimit:
-          type: integer
-          description: Per-move time limit in seconds
-          example: 30
-        timeRemaining:
-          type: number
-          description: Remaining time in seconds
-          example: 285.5
-        lastMoveTime:
-          type: string
-          format: date-time
+
 
     TimerConfig:
       type: object
@@ -1507,8 +1412,6 @@ tags:
     description: Player session management
   - name: Game Management
     description: Core game operations (create, move, complete)
-  - name: AI Engine
-    description: AI move calculation and strategy
   - name: Player Management
     description: Player progression and level unlocking
   - name: Leaderboard

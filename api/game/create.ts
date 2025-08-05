@@ -5,6 +5,7 @@ import { getClientIdentifier, createAnonymousSession } from '../_lib/auth';
 import { GAME_LEVELS, getCurrentLevel } from '../_lib/levelSystem';
 import { LevelUnlockManager } from '../_lib/levelUnlock';
 import { getPlayerData } from '../_lib/database';
+import { formatGameState } from '../_lib/types';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CreateGameRequest, CreateGameResponse, APIError, Player, GameState } from '../_lib/types';
 
@@ -101,10 +102,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(201).json({
       success: true,
       gameId,
-      gameData: {
+      gameData: formatGameState({
         ...gameData,
         id: gameId
-      },
+      }),
       timer: {
         totalTimeLimit: timerConfig.totalTimeLimit,
         moveTimeLimit: timerConfig.moveTimeLimit,

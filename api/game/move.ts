@@ -4,6 +4,7 @@ import { getGameState, updateGameState } from '../_lib/database';
 import { verifyPlayerAccess, getClientIdentifier } from '../_lib/auth';
 import { LevelUnlockManager } from '../_lib/levelUnlock';
 import { AdvancedAIPlayer } from '../_lib/advancedAI';
+import { formatGameState } from '../_lib/types';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { GameMoveRequest, GameMoveResponse, APIError, Player, GameState } from '../_lib/types';
 
@@ -223,10 +224,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Return state after AI move
           return res.json({
             success: true,
-            gameState: {
+            gameState: formatGameState({
               ...gameState,
               ...aiGameData
-            },
+            }),
             moveResult: {
               position,
               player,
@@ -249,10 +250,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Return updated game state (human move only)
     res.json({
       success: true,
-      gameState: {
+      gameState: formatGameState({
         ...gameState,
         ...updatedGameData
-      },
+      }),
       moveResult: {
         position,
         player,
