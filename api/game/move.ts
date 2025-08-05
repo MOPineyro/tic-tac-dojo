@@ -162,7 +162,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       position,
       timestamp: currentTime.toISOString(),
       moveNumber: gameState.moveCount + 1,
-      clientId: req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown'
+      clientId: Array.isArray(req.headers['x-forwarded-for']) 
+        ? req.headers['x-forwarded-for'][0] 
+        : req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown'
     });
 
     // Update game state

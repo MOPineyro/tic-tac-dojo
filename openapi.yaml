@@ -321,8 +321,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  
-
   /api/player/progress:
     get:
       summary: Get Player Progress
@@ -710,8 +708,6 @@ components:
           description: Whether player advanced to next level
           example: false
 
-
-
     PlayerProgressResponse:
       type: object
       required:
@@ -791,7 +787,7 @@ components:
           type: integer
           example: 23
 
-    # Complex Object Schemas  
+    # Complex Object Schemas
     StandardGameState:
       type: object
       required:
@@ -932,8 +928,6 @@ components:
         lastPlayed:
           type: string
           format: date-time
-
-
 
     TimerConfig:
       type: object
