@@ -1,12 +1,9 @@
-import { getGameState } from '../../_lib/database.js';
-import { getClientIdentifier } from '../../_lib/auth.js';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { APIError } from '../../_lib/types.js';
+import { getGameState } from '../../_lib/database';
+import { getClientIdentifier } from '../../_lib/auth';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { APIError } from '../../_lib/types';
 
-export default async function handler(
-  req: NextApiRequest, 
-  res: NextApiResponse<{ success: boolean; gameState: any } | APIError>
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });

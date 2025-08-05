@@ -1,14 +1,11 @@
-import { authRateLimit, checkRateLimit } from '../_lib/ratelimit.js';
-import { initializeFirebase } from '../_lib/database.js';
-import { createAnonymousSession, getClientIdentifier } from '../_lib/auth.js';
-import { sanitizeInput } from '../_lib/validation.js';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { CreateSessionRequest, CreateSessionResponse, APIError } from '../_lib/types.js';
+import { authRateLimit, checkRateLimit } from '../_lib/ratelimit';
+import { initializeFirebase } from '../_lib/database';
+import { createAnonymousSession, getClientIdentifier } from '../_lib/auth';
+import { sanitizeInput } from '../_lib/validation';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { CreateSessionRequest, CreateSessionResponse, APIError } from '../_lib/types';
 
-export default async function handler(
-  req: NextApiRequest, 
-  res: NextApiResponse<CreateSessionResponse | APIError>
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });

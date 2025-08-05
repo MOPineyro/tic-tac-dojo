@@ -1,6 +1,5 @@
-import { initializeFirebase } from './database.js';
-import type { AuthSession, TokenVerificationResult } from './types.js';
-import type { NextApiRequest } from 'next';
+import { initializeFirebase } from './database';
+import type { AuthSession, TokenVerificationResult } from './types';
 
 // Verify player access to a game
 export async function verifyPlayerAccess(gameId: string, playerId: string): Promise<boolean> {

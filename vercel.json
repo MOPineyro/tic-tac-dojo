@@ -1,11 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.ts",
-      "use": "@vercel/node"
-    }
-  ],
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/api/(.*)",

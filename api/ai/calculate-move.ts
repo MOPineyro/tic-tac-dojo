@@ -1,7 +1,7 @@
-import { validateSchema, sanitizeInput } from '../_lib/validation.js';
-import { getGameState } from '../_lib/database.js';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { AICalculateRequest, AICalculateResponse, APIError, Player, Difficulty } from '../_lib/types.js';
+import { validateSchema, sanitizeInput } from '../_lib/validation';
+import { getGameState } from '../_lib/database';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { AICalculateRequest, AICalculateResponse, APIError, Player, Difficulty } from '../_lib/types';
 
 // AI Player class with minimax algorithm
 class AIPlayer {
@@ -127,10 +127,7 @@ class AIPlayer {
   }
 }
 
-export default async function handler(
-  req: NextApiRequest, 
-  res: NextApiResponse<AICalculateResponse | APIError>
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });

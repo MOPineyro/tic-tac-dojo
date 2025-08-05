@@ -1,13 +1,10 @@
-import { leaderboardRateLimit, checkRateLimit } from '../_lib/ratelimit.js';
-import { initializeFirebase } from '../_lib/database.js';
-import { getClientIdentifier } from '../_lib/auth.js';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { LeaderboardResponse, APIError } from '../_lib/types.js';
+import { leaderboardRateLimit, checkRateLimit } from '../_lib/ratelimit';
+import { initializeFirebase } from '../_lib/database';
+import { getClientIdentifier } from '../_lib/auth';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { LeaderboardResponse, APIError } from '../_lib/types';
 
-export default async function handler(
-  req: NextApiRequest, 
-  res: NextApiResponse<LeaderboardResponse | APIError>
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });

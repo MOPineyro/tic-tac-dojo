@@ -1,6 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import type { RateLimitResult } from './types.js';
+import type { RateLimitResult } from './types';
 
 // Initialize Redis connection for rate limiting
 const redis = new Redis({

@@ -1,9 +1,9 @@
-import { moveRateLimit, checkRateLimit } from '../_lib/ratelimit.js';
-import { validateSchema, schemas, sanitizeInput } from '../_lib/validation.js';
-import { getGameState, updateGameState } from '../_lib/database.js';
-import { verifyPlayerAccess, getClientIdentifier } from '../_lib/auth.js';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { GameMoveRequest, GameMoveResponse, APIError, Player, GameState } from '../_lib/types.js';
+import { moveRateLimit, checkRateLimit } from '../_lib/ratelimit';
+import { validateSchema, schemas, sanitizeInput } from '../_lib/validation';
+import { getGameState, updateGameState } from '../_lib/database';
+import { verifyPlayerAccess, getClientIdentifier } from '../_lib/auth';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { GameMoveRequest, GameMoveResponse, APIError, Player, GameState } from '../_lib/types';
 
 // Game logic utilities
 function checkWinner(grid: (Player | null)[], gridSize: number): Player | 'DRAW' | null {
@@ -36,10 +36,7 @@ function isValidMove(grid: (Player | null)[], position: number): boolean {
   return position >= 0 && position < grid.length && grid[position] === null;
 }
 
-export default async function handler(
-  req: NextApiRequest, 
-  res: NextApiResponse<GameMoveResponse | APIError>
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow PUT requests
   if (req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' });

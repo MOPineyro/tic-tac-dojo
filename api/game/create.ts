@@ -1,14 +1,11 @@
-import { gameCreateRateLimit, checkRateLimit } from '../_lib/ratelimit.js';
-import { validateSchema, schemas, sanitizeInput } from '../_lib/validation.js';
-import { createGame } from '../_lib/database.js';
-import { getClientIdentifier, createAnonymousSession } from '../_lib/auth.js';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { CreateGameRequest, CreateGameResponse, APIError, Player, GameState } from '../_lib/types.js';
+import { gameCreateRateLimit, checkRateLimit } from '../_lib/ratelimit';
+import { validateSchema, schemas, sanitizeInput } from '../_lib/validation';
+import { createGame } from '../_lib/database';
+import { getClientIdentifier, createAnonymousSession } from '../_lib/auth';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { CreateGameRequest, CreateGameResponse, APIError, Player, GameState } from '../_lib/types';
 
-export default async function handler(
-  req: NextApiRequest, 
-  res: NextApiResponse<CreateGameResponse | APIError>
-) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });

@@ -1,5 +1,5 @@
 import admin from 'firebase-admin';
-import type { Game, PlayerData } from './types.js';
+import type { Game, PlayerData } from './types';
 
 // Reuse connection to minimize overhead (Fluid Compute optimization)
 let cachedConnection: admin.firestore.Firestore | null = null;

@@ -1,5 +1,5 @@
 // Schema validation utilities for API endpoints
-import type { ValidationSchema, ValidationResult, Player, GameMode, Difficulty } from './types.js';
+import type { ValidationSchema, ValidationResult, Player, GameMode, Difficulty } from './types';
 
 export function validateSchema(data: any, schema: ValidationSchema): ValidationResult {
   const errors: string[] = [];
