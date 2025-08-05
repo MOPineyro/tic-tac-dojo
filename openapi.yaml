@@ -1,0 +1,1519 @@
+openapi: 3.0.3
+info:
+  title: Tic-Tac-Dojo API
+  description: |
+    Backend API for Tic-Tac-Dojo - A progressive tic-tac-toe game with AI opponents across 5 difficulty levels.
+
+    ## Game Flow Overview
+
+    ### 1. Player Session Flow
+    ```
+    POST /api/auth/session → playerId
+    ```
+
+    ### 2. Game Creation & Play Flow
+    ```
+    POST /api/game/create → gameId
+    PUT /api/game/move → automatic AI response
+    GET /api/game/state/{gameId} → current state
+    POST /api/game/complete → scoring & progression
+    ```
+
+    ### 3. Progression System
+    ```
+    GET /api/player/progress → current level & stats
+    POST /api/player/progress → unlock levels with codes
+    ```
+
+    ### 4. Leaderboard & Rankings
+    ```
+    GET /api/leaderboard/rankings → global rankings
+    GET /api/leaderboard/rankings?cheatReports=true → admin cheat reports
+    ```
+
+    ## Level Progression System
+
+    The game features 5 progressive difficulty levels:
+
+    - **Level 1**: AI at 30% optimal play (Novice)
+    - **Level 2**: AI at 50% + pattern recognition (Student)  
+    - **Level 3**: AI at 70% + trap setting (Apprentice)
+    - **Level 4**: AI at 85% + defensive mastery (Expert)
+    - **Level 5**: AI at 95% + psychological warfare (Master)
+
+    Players must beat each level to advance, with comprehensive scoring that rewards strategic play even in losses.
+
+    ## Security Features
+
+    - Server-side winner determination (no client-side cheating)
+    - Move history tracking and validation
+    - Anti-cheat detection with risk scoring
+    - Rate limiting and input sanitization
+    - Temporal validation for game timing
+
+  version: 1.0.0
+  contact:
+    name: Tic-Tac-Dojo API Support
+    url: https://tic-tac-dojo.vercel.app
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://tic-tac-dojo.vercel.app
+    description: Production server
+  - url: http://localhost:3000
+    description: Development server
+
+security:
+  - ApiRateLimit: []
+
+paths:
+  /api:
+    get:
+      summary: API Health Check
+      description: Simple health check endpoint to verify API is running
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Tic-Tac-Dojo API is running!"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/auth/session:
+    post:
+      summary: Create Anonymous Player Session
+      description: |
+        Creates an anonymous player session with a unique player ID.
+        This is the first step for any player to start playing.
+
+        **Flow Position**: Entry point for new players
+      operationId: createSession
+      tags:
+        - Authentication
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId:
+                  type: string
+                  description: Optional device identifier for session tracking
+                  example: "device_123456"
+      responses:
+        "200":
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/game/create:
+    post:
+      summary: Create New Game
+      description: |
+        Creates a new game session for the specified player at their current level or requested level.
+        The game is automatically configured based on the player's progression.
+
+        **Flow Position**: After session creation, to start a new game
+
+        **Game Setup**:
+        - Uses player's current level or allows level selection if unlocked
+        - Sets appropriate AI difficulty and grid size
+        - Initializes timer based on level configuration
+        - Player always plays as 'X', AI as 'O'
+      operationId: createGame
+      tags:
+        - Game Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameCreationRequest"
+      responses:
+        "200":
+          description: Game created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameCreationResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: Player not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/game/move:
+    put:
+      summary: Make Game Move
+      description: |
+        Executes a player move and automatically triggers AI response if applicable.
+        This endpoint handles the complete turn cycle in AI games.
+
+        **Flow Position**: During active gameplay
+
+        **Move Processing**:
+        1. Validates move legality and player authorization
+        2. Updates game state with player move
+        3. Checks for win/draw conditions
+        4. If AI game and AI's turn, automatically calculates and executes AI move
+        5. Updates timer and move history
+        6. Returns complete updated game state
+
+        **Important**: In AI games, this single call handles both human and AI moves!
+      operationId: makeMove
+      tags:
+        - Game Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameMoveRequest"
+      responses:
+        "200":
+          description: Move executed successfully (may include AI response)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameMoveResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          description: Not your turn or unauthorized move
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/game/state/{gameId}:
+    get:
+      summary: Get Game State
+      description: |
+        Retrieves the current state of a game including grid, players, and metadata.
+
+        **Flow Position**: For checking game status, especially useful for reconnection
+      operationId: getGameState
+      tags:
+        - Game Management
+      parameters:
+        - name: gameId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique game identifier
+          example: "game_123456789"
+      responses:
+        "200":
+          description: Game state retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameStateResponse"
+        "404":
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/game/complete:
+    post:
+      summary: Complete Game and Calculate Score
+      description: |
+        Finalizes a completed game, calculates comprehensive scoring, and updates player progression.
+        **CRITICAL**: Winner is determined server-side from game state - no client input accepted.
+
+        **Flow Position**: After game ends (win/draw/timeout)
+
+        **Completion Process**:
+        1. Validates game is actually finished and not already finalized
+        2. Runs anti-cheat validation on move history
+        3. Determines winner from authoritative game state
+        4. Calculates comprehensive score (base + bonuses)
+        5. Updates player progression and statistics
+        6. Records detailed score breakdown
+        7. Handles level advancement if applicable
+
+        **Scoring Components**:
+        - Base score (win/draw/loss)
+        - Strategic move bonus
+        - Time efficiency bonus  
+        - Near-win bonus
+        - Survival bonus (for difficult levels)
+        - Level multiplier
+      operationId: completeGame
+      tags:
+        - Game Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GameCompletionRequest"
+      responses:
+        "200":
+          description: Game completed and scored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameCompletionResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "403":
+          description: Game not finished or already finalized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Game or player not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Anti-cheat violation detected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/RateLimitError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/ai/calculate-move:
+    post:
+      summary: Calculate AI Move (Legacy)
+      description: |
+        **Note**: This endpoint is primarily for testing/debugging. In normal gameplay,
+        AI moves are automatically calculated and executed by the `/api/game/move` endpoint.
+
+        Calculates the optimal move for the AI player using advanced algorithms.
+      operationId: calculateAIMove
+      tags:
+        - AI Engine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - gameId
+              properties:
+                gameId:
+                  type: string
+                  description: Game ID to calculate move for
+                  example: "game_123456789"
+      responses:
+        "200":
+          description: AI move calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIMoveResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/player/progress:
+    get:
+      summary: Get Player Progress
+      description: |
+        Retrieves detailed player progression including current level, statistics, and achievements.
+
+        **Flow Position**: For displaying player profile and progression
+      operationId: getPlayerProgress
+      tags:
+        - Player Management
+      parameters:
+        - name: playerId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Player identifier
+          example: "anon_1234567890_abc123"
+      responses:
+        "200":
+          description: Player progress retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerProgressResponse"
+        "404":
+          description: Player not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      summary: Unlock Level with Code
+      description: |
+        Allows players to unlock higher levels using special codes (admin, challenge, easter egg).
+
+        **Flow Position**: For level unlocking via special codes
+
+        **Unlock Types**:
+        - **Admin codes**: Full access unlock
+        - **Challenge codes**: Specific level unlock
+        - **Easter egg codes**: Hidden level access
+      operationId: unlockLevel
+      tags:
+        - Player Management
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LevelUnlockRequest"
+      responses:
+        "200":
+          description: Level unlocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LevelUnlockResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          description: Invalid unlock code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid unlock code"
+                  hints:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      ["Try a different approach", "Check for hidden clues"]
+        "404":
+          description: Player not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/leaderboard/rankings:
+    get:
+      summary: Get Global Rankings
+      description: |
+        Retrieves global player rankings based on total score and level progression.
+        Also provides admin access to cheat reports.
+
+        **Flow Position**: For displaying leaderboards and competition
+      operationId: getLeaderboard
+      tags:
+        - Leaderboard
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of top players to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Pagination offset
+        - name: cheatReports
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Return cheat reports instead (requires admin access)
+        - name: x-admin-key
+          in: header
+          schema:
+            type: string
+          description: Admin key for accessing cheat reports
+      responses:
+        "200":
+          description: Rankings retrieved successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LeaderboardResponse"
+                  - $ref: "#/components/schemas/CheatReportsResponse"
+        "401":
+          description: Invalid admin credentials (for cheat reports)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    ApiRateLimit:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Rate limiting is applied based on IP address
+
+  schemas:
+    # Core Data Types
+    Player:
+      type: string
+      enum: ["X", "O"]
+      description: Player marker (X for human, O for AI)
+
+    GameState:
+      type: string
+      enum: ["waiting", "active", "finished"]
+      description: Current state of the game
+
+    GameMode:
+      type: string
+      enum: ["ai"]
+      description: Game mode (currently only AI supported)
+
+    Difficulty:
+      type: string
+      enum: ["easy", "medium", "hard", "expert", "master"]
+      description: AI difficulty level
+
+    Grid:
+      type: array
+      items:
+        oneOf:
+          - $ref: "#/components/schemas/Player"
+          - type: "null"
+      minItems: 9
+      maxItems: 9
+      description: 3x3 game grid (null represents empty cell)
+      example: ["X", null, "O", null, "X", null, null, null, "O"]
+
+    MoveRecord:
+      type: object
+      required:
+        - player
+        - position
+        - timestamp
+        - moveNumber
+        - clientId
+      properties:
+        player:
+          $ref: "#/components/schemas/Player"
+        position:
+          type: integer
+          minimum: 0
+          maximum: 8
+          description: Grid position (0-8)
+        timestamp:
+          type: string
+          format: date-time
+        moveNumber:
+          type: integer
+          minimum: 1
+        clientId:
+          type: string
+          description: Client identifier for anti-cheat tracking
+
+    # Request Schemas
+    GameCreationRequest:
+      type: object
+      required:
+        - playerId
+      properties:
+        playerId:
+          type: string
+          description: Player identifier from session creation
+          example: "anon_1234567890_abc123"
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Requested game level (must be unlocked)
+          example: 1
+
+    GameMoveRequest:
+      type: object
+      required:
+        - gameId
+        - playerId
+        - position
+        - player
+      properties:
+        gameId:
+          type: string
+          description: Game identifier
+          example: "game_123456789"
+        playerId:
+          type: string
+          description: Player identifier
+          example: "anon_1234567890_abc123"
+        position:
+          type: integer
+          minimum: 0
+          maximum: 8
+          description: Grid position for move (0-8, left-to-right, top-to-bottom)
+          example: 4
+        player:
+          $ref: "#/components/schemas/Player"
+          description: Player making the move (should be 'X' for human players)
+
+    GameCompletionRequest:
+      type: object
+      required:
+        - gameId
+        - playerId
+        - finalGrid
+      properties:
+        gameId:
+          type: string
+          description: Game identifier
+          example: "game_123456789"
+        playerId:
+          type: string
+          description: Player identifier
+          example: "anon_1234567890_abc123"
+        finalGrid:
+          $ref: "#/components/schemas/Grid"
+          description: Final game grid state for validation
+
+    LevelUnlockRequest:
+      type: object
+      required:
+        - playerId
+        - targetLevel
+        - unlockCode
+      properties:
+        playerId:
+          type: string
+          description: Player identifier
+          example: "anon_1234567890_abc123"
+        targetLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Level to unlock
+          example: 3
+        unlockCode:
+          type: string
+          description: Special unlock code
+          example: "DOJO_MASTER"
+
+    # Response Schemas
+    SessionResponse:
+      type: object
+      required:
+        - success
+        - playerId
+        - playerData
+      properties:
+        success:
+          type: boolean
+          example: true
+        playerId:
+          type: string
+          example: "anon_1234567890_abc123"
+        playerData:
+          $ref: "#/components/schemas/PlayerData"
+
+    GameCreationResponse:
+      type: object
+      required:
+        - success
+        - gameData
+        - timer
+        - levelInfo
+      properties:
+        success:
+          type: boolean
+          example: true
+        gameData:
+          $ref: "#/components/schemas/GameData"
+        timer:
+          $ref: "#/components/schemas/TimerConfig"
+        levelInfo:
+          $ref: "#/components/schemas/LevelInfo"
+
+    GameMoveResponse:
+      type: object
+      required:
+        - success
+        - gameState
+        - moveResult
+      properties:
+        success:
+          type: boolean
+          example: true
+        gameState:
+          $ref: "#/components/schemas/GameData"
+        moveResult:
+          $ref: "#/components/schemas/MoveResult"
+        aiMove:
+          $ref: "#/components/schemas/AIMoveResult"
+          description: Only present if AI responded automatically
+
+    GameStateResponse:
+      type: object
+      required:
+        - success
+        - gameState
+      properties:
+        success:
+          type: boolean
+          example: true
+        gameState:
+          $ref: "#/components/schemas/GameData"
+
+    GameCompletionResponse:
+      type: object
+      required:
+        - success
+        - finalScore
+        - scoreBreakdown
+        - gameAnalysis
+        - playerUpdate
+      properties:
+        success:
+          type: boolean
+          example: true
+        finalScore:
+          type: integer
+          description: Total score for this game
+          example: 850
+        scoreBreakdown:
+          $ref: "#/components/schemas/ScoreBreakdown"
+        gameAnalysis:
+          $ref: "#/components/schemas/GameAnalysis"
+        playerUpdate:
+          $ref: "#/components/schemas/PlayerUpdate"
+        levelUp:
+          type: boolean
+          description: Whether player advanced to next level
+          example: false
+
+    AIMoveResponse:
+      type: object
+      required:
+        - success
+        - move
+        - aiPlayer
+        - level
+        - strategy
+        - optimalPlayPercentage
+        - behaviorDescription
+        - explanation
+      properties:
+        success:
+          type: boolean
+          example: true
+        move:
+          type: integer
+          minimum: 0
+          maximum: 8
+          description: AI's chosen move position
+          example: 4
+        aiPlayer:
+          $ref: "#/components/schemas/Player"
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        strategy:
+          type: string
+          enum: ["basic", "pattern", "trap", "defensive", "psychological"]
+          example: "basic"
+        optimalPlayPercentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Percentage of time AI plays optimally
+          example: 30
+        behaviorDescription:
+          type: string
+          example: "Makes random moves 70% of the time, optimal moves 30% of the time"
+        explanation:
+          type: string
+          example: "Level 1 AI (Novice) chose position 4 using basic strategy"
+
+    PlayerProgressResponse:
+      type: object
+      required:
+        - success
+        - playerData
+        - levelDetails
+        - statistics
+      properties:
+        success:
+          type: boolean
+          example: true
+        playerData:
+          $ref: "#/components/schemas/PlayerData"
+        levelDetails:
+          $ref: "#/components/schemas/LevelInfo"
+        statistics:
+          $ref: "#/components/schemas/PlayerStatistics"
+
+    LevelUnlockResponse:
+      type: object
+      required:
+        - success
+        - unlockedLevel
+        - playerData
+      properties:
+        success:
+          type: boolean
+          example: true
+        unlockedLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 3
+        playerData:
+          $ref: "#/components/schemas/PlayerData"
+        message:
+          type: string
+          example: "Level 3 unlocked! You may now face the Apprentice."
+
+    LeaderboardResponse:
+      type: object
+      required:
+        - success
+        - rankings
+        - totalPlayers
+        - lastUpdated
+      properties:
+        success:
+          type: boolean
+          example: true
+        rankings:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankingEntry"
+        totalPlayers:
+          type: integer
+          example: 1547
+        lastUpdated:
+          type: string
+          format: date-time
+
+    CheatReportsResponse:
+      type: object
+      required:
+        - success
+        - reports
+        - totalReports
+      properties:
+        success:
+          type: boolean
+          example: true
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheatReport"
+        totalReports:
+          type: integer
+          example: 23
+
+    # Complex Object Schemas
+    PlayerData:
+      type: object
+      required:
+        - id
+        - playType
+        - currentLevel
+        - levelProgress
+        - totalScore
+        - createdAt
+        - lastPlayed
+      properties:
+        id:
+          type: string
+          example: "anon_1234567890_abc123"
+        playType:
+          type: string
+          enum: ["anonymous"]
+          example: "anonymous"
+        currentLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        levelProgress:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              wins:
+                type: integer
+              losses:
+                type: integer
+              draws:
+                type: integer
+              requiredWins:
+                type: integer
+              completed:
+                type: boolean
+          example:
+            "1":
+              {
+                "wins": 2,
+                "losses": 1,
+                "draws": 0,
+                "requiredWins": 3,
+                "completed": false,
+              }
+        totalScore:
+          type: integer
+          example: 1250
+        achievements:
+          type: array
+          items:
+            type: string
+          example: ["first_win", "strategic_player"]
+        createdAt:
+          type: string
+          format: date-time
+        lastPlayed:
+          type: string
+          format: date-time
+
+    GameData:
+      type: object
+      required:
+        - id
+        - grid
+        - gridSize
+        - currentPlayer
+        - gameState
+        - gameMode
+        - difficulty
+        - level
+        - levelName
+        - moveCount
+        - startedAt
+      properties:
+        id:
+          type: string
+          example: "game_123456789"
+        grid:
+          $ref: "#/components/schemas/Grid"
+        gridSize:
+          type: integer
+          enum: [3]
+          example: 3
+        currentPlayer:
+          $ref: "#/components/schemas/Player"
+        gameState:
+          $ref: "#/components/schemas/GameState"
+        winner:
+          oneOf:
+            - $ref: "#/components/schemas/Player"
+            - type: string
+              enum: ["DRAW"]
+            - type: "null"
+        gameMode:
+          $ref: "#/components/schemas/GameMode"
+        difficulty:
+          $ref: "#/components/schemas/Difficulty"
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        levelName:
+          type: string
+          example: "Novice"
+        requiredWins:
+          type: integer
+          example: 3
+        moveCount:
+          type: integer
+          example: 5
+        moveHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/MoveRecord"
+        playerCount:
+          type: integer
+          enum: [2]
+          example: 2
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finalized:
+          type: boolean
+          example: false
+        finalizedAt:
+          type: string
+          format: date-time
+          nullable: true
+        finalScore:
+          type: integer
+          nullable: true
+        totalTimeLimit:
+          type: integer
+          description: Total game time limit in seconds
+          example: 300
+        moveTimeLimit:
+          type: integer
+          description: Per-move time limit in seconds
+          example: 30
+        timeRemaining:
+          type: number
+          description: Remaining time in seconds
+          example: 285.5
+        lastMoveTime:
+          type: string
+          format: date-time
+
+    TimerConfig:
+      type: object
+      required:
+        - totalTimeLimit
+        - moveTimeLimit
+        - warningThreshold
+      properties:
+        totalTimeLimit:
+          type: integer
+          description: Total game time limit in seconds
+          example: 300
+        moveTimeLimit:
+          type: integer
+          description: Per-move time limit in seconds
+          example: 30
+        warningThreshold:
+          type: integer
+          description: Warning threshold in seconds
+          example: 60
+
+    LevelInfo:
+      type: object
+      required:
+        - level
+        - name
+        - description
+        - requiredWins
+        - gridSize
+        - aiDepth
+        - optimalPlayPercentage
+        - aiStrategy
+        - behaviorDescription
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        name:
+          type: string
+          example: "Novice"
+        description:
+          type: string
+          example: "Basic AI that makes random moves most of the time"
+        requiredWins:
+          type: integer
+          example: 3
+        gridSize:
+          type: integer
+          enum: [3]
+          example: 3
+        aiDepth:
+          type: integer
+          example: 3
+        optimalPlayPercentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 30
+        aiStrategy:
+          type: string
+          enum: ["basic", "pattern", "trap", "defensive", "psychological"]
+          example: "basic"
+        behaviorDescription:
+          type: string
+          example: "Makes random moves 70% of the time, optimal moves 30% of the time"
+
+    MoveResult:
+      type: object
+      required:
+        - position
+        - player
+        - winner
+        - gameOver
+      properties:
+        position:
+          type: integer
+          minimum: 0
+          maximum: 8
+          example: 4
+        player:
+          $ref: "#/components/schemas/Player"
+        winner:
+          oneOf:
+            - $ref: "#/components/schemas/Player"
+            - type: string
+              enum: ["DRAW"]
+            - type: "null"
+        gameOver:
+          type: boolean
+          example: false
+
+    AIMoveResult:
+      type: object
+      required:
+        - player
+        - position
+        - moveNumber
+      properties:
+        player:
+          $ref: "#/components/schemas/Player"
+          example: "O"
+        position:
+          type: integer
+          minimum: 0
+          maximum: 8
+          example: 6
+        moveNumber:
+          type: integer
+          example: 4
+
+    ScoreBreakdown:
+      type: object
+      required:
+        - baseScore
+        - progressBonus
+        - timeBonus
+        - moveEfficiency
+        - nearWinBonus
+        - survivalBonus
+        - levelMultiplier
+        - totalScore
+      properties:
+        baseScore:
+          type: integer
+          description: Base score for win/draw/loss
+          example: 100
+        progressBonus:
+          type: integer
+          description: Bonus for level progression
+          example: 50
+        timeBonus:
+          type: integer
+          description: Bonus for time efficiency
+          example: 25
+        moveEfficiency:
+          type: integer
+          description: Bonus for strategic moves
+          example: 30
+        nearWinBonus:
+          type: integer
+          description: Bonus for nearly winning
+          example: 20
+        survivalBonus:
+          type: integer
+          description: Bonus for surviving difficult levels
+          example: 15
+        levelMultiplier:
+          type: number
+          description: Score multiplier based on level
+          example: 1.2
+        totalScore:
+          type: integer
+          description: Final calculated score
+          example: 288
+
+    GameAnalysis:
+      type: object
+      required:
+        - strategicMoves
+        - threats
+        - nearWins
+        - survivalTime
+        - moveQuality
+      properties:
+        strategicMoves:
+          type: integer
+          description: Number of strategic moves made
+          example: 3
+        threats:
+          type: integer
+          description: Number of threats created
+          example: 2
+        nearWins:
+          type: integer
+          description: Number of near-win situations
+          example: 1
+        survivalTime:
+          type: number
+          description: Time survived in seconds
+          example: 145.5
+        moveQuality:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Overall quality of moves (0-1)
+          example: 0.75
+
+    PlayerUpdate:
+      type: object
+      required:
+        - newTotalScore
+        - levelProgress
+        - statsUpdate
+      properties:
+        newTotalScore:
+          type: integer
+          example: 1538
+        levelProgress:
+          type: object
+          description: Updated level progress
+          additionalProperties:
+            type: object
+            properties:
+              wins:
+                type: integer
+              losses:
+                type: integer
+              draws:
+                type: integer
+              requiredWins:
+                type: integer
+              completed:
+                type: boolean
+        statsUpdate:
+          type: object
+          properties:
+            totalGames:
+              type: integer
+            totalWins:
+              type: integer
+            totalLosses:
+              type: integer
+            totalDraws:
+              type: integer
+            winRate:
+              type: number
+
+    PlayerStatistics:
+      type: object
+      required:
+        - totalGames
+        - totalWins
+        - totalLosses
+        - totalDraws
+        - winRate
+        - averageScore
+        - highestLevel
+        - achievements
+      properties:
+        totalGames:
+          type: integer
+          example: 25
+        totalWins:
+          type: integer
+          example: 15
+        totalLosses:
+          type: integer
+          example: 8
+        totalDraws:
+          type: integer
+          example: 2
+        winRate:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.6
+        averageScore:
+          type: number
+          example: 245.8
+        highestLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 3
+        achievements:
+          type: array
+          items:
+            type: string
+          example: ["first_win", "strategic_player", "level_2_master"]
+
+    RankingEntry:
+      type: object
+      required:
+        - rank
+        - playerId
+        - totalScore
+        - highestLevel
+        - totalGames
+        - winRate
+        - averageScore
+        - lastPlayed
+      properties:
+        rank:
+          type: integer
+          example: 1
+        playerId:
+          type: string
+          example: "anon_1234567890_abc123"
+        totalScore:
+          type: integer
+          example: 5420
+        highestLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        totalGames:
+          type: integer
+          example: 45
+        winRate:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.73
+        averageScore:
+          type: number
+          example: 120.4
+        achievements:
+          type: array
+          items:
+            type: string
+          example: ["master_strategist", "level_4_master"]
+        levelProgress:
+          type: object
+          description: Progress per level
+          additionalProperties:
+            type: object
+            properties:
+              wins:
+                type: integer
+              losses:
+                type: integer
+              draws:
+                type: integer
+              completed:
+                type: boolean
+        lastPlayed:
+          type: string
+          format: date-time
+
+    CheatReport:
+      type: object
+      required:
+        - id
+        - playerId
+        - gameId
+        - timestamp
+        - riskScore
+        - violations
+        - action
+      properties:
+        id:
+          type: string
+          example: "report_123456"
+        playerId:
+          type: string
+          example: "anon_1234567890_abc123"
+        gameId:
+          type: string
+          example: "game_123456789"
+        timestamp:
+          type: string
+          format: date-time
+        riskScore:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Risk score (0-1, higher is more suspicious)
+          example: 0.85
+        violations:
+          type: array
+          items:
+            type: string
+          example: ["invalid_move_sequence", "timing_anomaly"]
+        action:
+          type: string
+          enum: ["flagged", "rejected", "investigated"]
+          example: "rejected"
+        details:
+          type: object
+          description: Additional violation details
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Invalid request"
+        message:
+          type: string
+          description: Detailed error message
+          example: "The specified game was not found"
+        code:
+          type: string
+          description: Error code for programmatic handling
+          example: "GAME_NOT_FOUND"
+
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Validation failed"
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+                example:
+                  - field: "position"
+                    message: "Position must be between 0 and 8"
+                  - field: "player"
+                    message: "Player must be X or O"
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Rate limit exceeded"
+              retryAfter:
+                type: integer
+                description: Seconds to wait before retrying
+                example: 60
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  examples:
+    # Game Flow Examples
+    NewGameSession:
+      summary: Creating a new game session
+      value:
+        playerId: "anon_1734567890_xyz789"
+        level: 1
+
+    PlayerMove:
+      summary: Making a move as human player
+      value:
+        gameId: "game_abcd1234"
+        playerId: "anon_1734567890_xyz789"
+        position: 4
+        player: "X"
+
+    GameCompletion:
+      summary: Completing a finished game
+      value:
+        gameId: "game_abcd1234"
+        playerId: "anon_1734567890_xyz789"
+        finalGrid: ["X", "O", "X", "O", "X", "O", null, null, null]
+
+    LevelUnlock:
+      summary: Unlocking a level with admin code
+      value:
+        playerId: "anon_1734567890_xyz789"
+        targetLevel: 5
+        unlockCode: "DOJO_MASTER"
+
+tags:
+  - name: Health
+    description: API health and status endpoints
+  - name: Authentication
+    description: Player session management
+  - name: Game Management
+    description: Core game operations (create, move, complete)
+  - name: AI Engine
+    description: AI move calculation and strategy
+  - name: Player Management
+    description: Player progression and level unlocking
+  - name: Leaderboard
+    description: Global rankings and competitive features
+
+externalDocs:
+  description: Tic-Tac-Dojo Project Documentation
+  url: https://github.com/your-repo/tic-tac-dojo
