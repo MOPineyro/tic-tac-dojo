@@ -74,7 +74,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       requiredWins: levelData.requiredWins,
       grid: Array(levelData.gridSize * levelData.gridSize).fill(null),
       currentPlayer: 'X' as Player,
-      gameState: 'waiting' as GameState,
+      gameState: 'active' as GameState,
       winner: null,
       moveCount: 0,
       startedAt: null as string | null,
@@ -82,11 +82,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     // For AI games, add AI player
-    if (gameMode === 'ai') {
-      gameData.players.push('ai_player');
-      gameData.gameState = 'active';
-      gameData.startedAt = new Date().toISOString();
-    }
+    gameData.players.push('ai_player');
+    gameData.startedAt = new Date().toISOString();
 
     // Create game in Firebase
     const gameId = await createGame(gameData);
