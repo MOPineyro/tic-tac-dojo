@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { initializeFirebase, getPlayerData } from '../_lib/database';
 import { validateSchema, sanitizeInput } from '../_lib/validation';
-import { updatePlayerProgress, getCurrentLevel, getNextLevel, calculateLevelScore } from '../_lib/levelSystem';
+import { updatePlayerProgress, getCurrentLevel, getNextLevel } from '../_lib/levelSystem';
+import { AdvancedScoringSystem } from '../_lib/scoring';
 import type { PlayerData } from '../_lib/types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -11,7 +12,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const sanitizedBody = sanitizeInput(req.body);
-    const { playerId, gameId, won, level, movesCount, timeElapsed, baseScore } = sanitizedBody;
+    const { 
+      playerId, 
+      gameId, 
+      won, 
+      level, 
+      timeElapsed,
+      playerMoves = [],
+      aiMoves = [],
+      finalGrid = [],
+      gridSize = 3,
+      winner = null
+    } = sanitizedBody;
 
     // Validate required fields
     if (!playerId || !gameId || typeof won !== 'boolean' || !level) {
@@ -36,11 +48,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       achievements: playerData.achievements || []
     });
 
-    // Calculate score
-    const score = calculateLevelScore(
-      baseScore || 100,
-      levelData,
-      movesCount || 9,
+    // Analyze the game performance
+    const gameAnalysis = AdvancedScoringSystem.analyzeGame(
+      playerMoves,
+      aiMoves,
+      finalGrid,
+      gridSize,
+      winner
+    );
+
+    // Calculate detailed score breakdown
+    const scoreBreakdown = AdvancedScoringSystem.calculateGameScore(
+      level,
+      won,
+      gameAnalysis,
       timeElapsed || 60000
     );
 
@@ -56,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       level,
       won,
-      score
+      scoreBreakdown.totalScore
     );
 
     // Update database
@@ -80,7 +101,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       result: {
         won,
-        score,
+        score: scoreBreakdown.totalScore,
+        scoreBreakdown,
+        gameAnalysis,
         levelCompleted: progressResult.progress.levelProgress[level].completed,
         levelUp: progressResult.levelUp,
         gameCompleted: progressResult.completed

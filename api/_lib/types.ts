@@ -143,12 +143,37 @@ export interface LeaderboardEntry {
 
 export interface LeaderboardResponse {
   success: boolean;
-  rankings: LeaderboardEntry[];
+  rankings: RankingEntry[];
   metadata: {
     total: number;
-    gameMode: string;
-    limit: number;
+    sortBy: string;
+    filterLevel?: number | null;
     generatedAt: string;
+    availableLevels: {
+      level: number;
+      name: string;
+      description: string;
+    }[];
+  };
+}
+
+export interface RankingEntry {
+  rank: number;
+  playerId: string;
+  playerName: string;
+  totalScore: number;
+  highestLevel: number;
+  levelName: string;
+  gamesPlayed: number;
+  averageScore: number;
+  achievements: string[];
+  lastPlayed: string;
+  levelProgress: {
+    [level: number]: {
+      wins: number;
+      bestScore: number;
+      completed: boolean;
+    };
   };
 }
 
