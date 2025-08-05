@@ -4,6 +4,7 @@ import { validateSchema, sanitizeInput } from '../_lib/validation';
 import { updatePlayerProgress, getCurrentLevel, getNextLevel } from '../_lib/levelSystem';
 import { AdvancedScoringSystem } from '../_lib/scoring';
 import { AntiCheatValidator } from '../_lib/antiCheat';
+import { LevelUnlockManager } from '../_lib/levelUnlock';
 import type { PlayerData, Player } from '../_lib/types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -127,6 +128,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       winner
     );
 
+    // Calculate time bonus if game had timer
+    let timeBonus = 0;
+    if (gameState.totalTimeLimit && gameState.timeRemaining) {
+      timeBonus = LevelUnlockManager.calculateTimeBonus(
+        gameState.timeRemaining,
+        gameState.totalTimeLimit
+      );
+    }
+
     // Calculate detailed score breakdown
     const scoreBreakdown = AdvancedScoringSystem.calculateGameScore(
       level,
@@ -134,6 +144,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       gameAnalysis,
       timeElapsed || 60000
     );
+    
+    // Add time bonus to score breakdown
+    scoreBreakdown.timeBonus += timeBonus;
+    scoreBreakdown.totalScore += timeBonus;
 
     // Update player progress
     const progressResult = updatePlayerProgress(

@@ -2,6 +2,7 @@ import { moveRateLimit, checkRateLimit } from '../_lib/ratelimit';
 import { validateSchema, schemas, sanitizeInput } from '../_lib/validation';
 import { getGameState, updateGameState } from '../_lib/database';
 import { verifyPlayerAccess, getClientIdentifier } from '../_lib/auth';
+import { LevelUnlockManager } from '../_lib/levelUnlock';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { GameMoveRequest, GameMoveResponse, APIError, Player, GameState } from '../_lib/types';
 
@@ -118,12 +119,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Calculate time remaining (if timer is enabled)
+    const currentTime = new Date();
+    let timeRemaining = gameState.timeRemaining || 0;
+    
+    if (gameState.totalTimeLimit && gameState.lastMoveTime) {
+      const timeSinceLastMove = currentTime.getTime() - new Date(gameState.lastMoveTime).getTime();
+      timeRemaining = Math.max(0, timeRemaining - Math.floor(timeSinceLastMove / 1000));
+    }
+
+    // Check if time has run out
+    if (gameState.totalTimeLimit && timeRemaining <= 0) {
+      // Game ends due to timeout - opponent wins
+      const timeoutWinner = player === 'X' ? 'O' : 'X';
+      
+      await updateGameState(gameId, {
+        gameState: 'finished' as GameState,
+        winner: timeoutWinner,
+        finishedAt: new Date().toISOString(),
+        timeRemaining: 0
+      });
+
+      return res.json({
+        success: false,
+        error: 'Time limit exceeded',
+        gameData: {
+          ...gameState,
+          gameState: 'finished',
+          winner: timeoutWinner,
+          timeRemaining: 0
+        },
+        timeUp: true
+      });
+    }
+
     // Store move history for anti-cheat validation
     const moveHistory = gameState.moveHistory || [];
     moveHistory.push({
       player,
       position,
-      timestamp: new Date().toISOString(),
+      timestamp: currentTime.toISOString(),
       moveNumber: gameState.moveCount + 1,
       clientId: req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown'
     });
@@ -136,6 +171,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       winner,
       moveCount: gameState.moveCount + 1,
       moveHistory: moveHistory,
+      timeRemaining,
+      lastMoveTime: currentTime.toISOString(),
       finishedAt: winner ? new Date().toISOString() : null
     };
 

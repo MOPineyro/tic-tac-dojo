@@ -3,6 +3,7 @@ import { validateSchema, schemas, sanitizeInput } from '../_lib/validation';
 import { createGame } from '../_lib/database';
 import { getClientIdentifier, createAnonymousSession } from '../_lib/auth';
 import { GAME_LEVELS, getCurrentLevel } from '../_lib/levelSystem';
+import { LevelUnlockManager } from '../_lib/levelUnlock';
 import { getPlayerData } from '../_lib/database';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CreateGameRequest, CreateGameResponse, APIError, Player, GameState } from '../_lib/types';
@@ -63,6 +64,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Level not unlocked yet' });
     }
 
+    // Get timer configuration for this level
+    const timerConfig = LevelUnlockManager.getTimerConfig(targetLevel);
+    
     // Create game data using level settings
     const gameData = {
       players: [playerId],
@@ -78,7 +82,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       winner: null,
       moveCount: 0,
       startedAt: null as string | null,
-      finishedAt: null as string | null
+      finishedAt: null as string | null,
+      // Timer settings
+      totalTimeLimit: timerConfig.totalTimeLimit,
+      moveTimeLimit: timerConfig.moveTimeLimit,
+      timeRemaining: timerConfig.totalTimeLimit,
+      lastMoveTime: new Date().toISOString()
     };
 
     // For AI games, add AI player
@@ -95,6 +104,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       gameData: {
         ...gameData,
         id: gameId
+      },
+      timer: {
+        totalTimeLimit: timerConfig.totalTimeLimit,
+        moveTimeLimit: timerConfig.moveTimeLimit,
+        warningThreshold: timerConfig.warningThreshold,
+        timeRemaining: timerConfig.totalTimeLimit
+      },
+      levelInfo: {
+        level: targetLevel,
+        name: levelData.name,
+        description: levelData.description,
+        aiStrategy: levelData.aiStrategy,
+        optimalPlayPercentage: levelData.optimalPlayPercentage,
+        behaviorDescription: levelData.behaviorDescription
       }
     });
 

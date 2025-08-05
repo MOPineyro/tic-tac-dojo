@@ -33,6 +33,11 @@ export interface Game {
   finalized?: boolean;
   finalizedAt?: string;
   finalScore?: number;
+  // Timer fields
+  totalTimeLimit?: number;
+  moveTimeLimit?: number;
+  timeRemaining?: number;
+  lastMoveTime?: string;
   createdAt?: any; // Firestore timestamp
   lastUpdate?: any; // Firestore timestamp
 }
