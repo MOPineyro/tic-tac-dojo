@@ -95,8 +95,8 @@ export const schemas: { [key: string]: ValidationSchema } = {
     playerId: { type: 'string', required: true, minLength: 1 },
     gameMode: { 
       type: 'string', 
-      required: true,
-      validate: (value) => ['single', 'multiplayer', 'ai'].includes(value) || 'Invalid game mode'
+      required: false,
+      validate: (value) => !value || ['single', 'multiplayer', 'ai'].includes(value) || 'Invalid game mode'
     },
     difficulty: {
       type: 'string',
@@ -109,6 +109,13 @@ export const schemas: { [key: string]: ValidationSchema } = {
       min: 3,
       max: 10,
       validate: (value) => Number.isInteger(value) || 'Grid size must be an integer'
+    },
+    level: {
+      type: 'number',
+      required: false,
+      min: 1,
+      max: 5,
+      validate: (value) => Number.isInteger(value) || 'Level must be an integer'
     }
   },
   
