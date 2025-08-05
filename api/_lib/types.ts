@@ -42,6 +42,20 @@ export interface PlayerData {
   draws: number;
 }
 
+// Vercel API types
+export interface VercelRequest {
+  query: { [key: string]: string | string[] | undefined };
+  body: any;
+  headers: { [key: string]: string | undefined };
+  method: string;
+}
+
+export interface VercelResponse {
+  status: (code: number) => VercelResponse;
+  json: (object: any) => VercelResponse;
+  setHeader: (key: string, value: string) => VercelResponse;
+}
+
 // API Request/Response types
 export interface CreateGameRequest {
   playerId: string;

@@ -1,0 +1,33 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "scores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gameMode",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "score", 
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "games",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "gameState",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastUpdate",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

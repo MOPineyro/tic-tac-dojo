@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Players collection - allow reads and controlled writes
+    match /players/{playerId} {
+      allow read: if true; // Public read for leaderboards
+      allow create: if request.resource.data.keys().hasOnly([
+        "playerId", "playerName", "isAnonymous", "createdAt", 
+        "lastActive", "gamesPlayed", "wins", "losses", "draws"
+      ]) && request.resource.data.playerId == playerId
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() > 0
+        && request.resource.data.playerName.size() <= 50;
+      
+      allow update: if request.auth != null 
+        && resource.data.playerId == playerId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["lastActive", "gamesPlayed", "wins", "losses", "draws"]);
+    }
+    
+    // Games collection - controlled access
+    match /games/{gameId} {
+      allow read: if request.auth != null 
+        || resource.data.gameState == 'finished'; // Allow reading finished games
+      
+      allow create: if request.resource.data.keys().hasOnly([
+        "players", "gameMode", "difficulty", "gridSize", "grid", 
+        "currentPlayer", "gameState", "winner", "moveCount", 
+        "startedAt", "finishedAt", "createdAt", "lastUpdate"
+      ]) && request.resource.data.gameState in ['waiting', 'active']
+        && request.resource.data.gridSize >= 3
+        && request.resource.data.gridSize <= 10
+        && request.resource.data.grid.size() == (request.resource.data.gridSize * request.resource.data.gridSize);
+      
+      allow update: if request.auth != null
+        && request.resource.data.lastUpdate > resource.data.lastUpdate
+        && request.resource.data.moveCount >= resource.data.moveCount;
+    }
+    
+    // Game moves collection for move validation
+    match /gameMoves/{moveId} {
+      allow create: if request.resource.data.keys().hasOnly([
+        "gameId", "playerId", "player", "position", "timestamp"
+      ]) && request.resource.data.timestamp >= request.time - duration.value(30, 's')
+        && request.resource.data.position >= 0
+        && request.resource.data.player in ['X', 'O'];
+      
+      allow read: if request.auth != null;
+    }
+    
+    // Leaderboard scores - controlled writes
+    match /scores/{scoreId} {
+      allow read: if true; // Public leaderboard
+      allow create: if request.resource.data.keys().hasOnly([
+        "playerId", "playerName", "score", "gameMode", "difficulty", 
+        "timestamp", "movesCount", "timeElapsed"
+      ]) && request.resource.data.score is number
+        && request.resource.data.score >= 0
+        && request.resource.data.score <= 1000000  // Realistic score ceiling
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() > 0
+        && request.resource.data.playerName.size() <= 50
+        && request.resource.data.timestamp == request.time;
+    }
+    
+    // Deny all other operations
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
