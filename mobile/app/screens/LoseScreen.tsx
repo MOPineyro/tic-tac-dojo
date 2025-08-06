@@ -184,6 +184,13 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
             </Text>
           </Pressable>
 
+          <Pressable
+            style={styles.leaderboardLink}
+            onPress={() => navigation.navigate("Leaderboard")}
+          >
+            <Text style={styles.leaderboardText}>🏆 View Leaderboard</Text>
+          </Pressable>
+
           {/* Lives remaining indicator */}
           <View style={styles.livesContainer}>
             <Text style={[styles.livesText, { color: theme.colors.textDim }]}>
@@ -342,5 +349,17 @@ const styles = StyleSheet.create({
   },
   livesText: {
     fontSize: 14,
+  },
+  leaderboardLink: {
+    alignItems: "center",
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  leaderboardText: {
+    color: "#00AA44",
+    fontSize: 14,
+    fontWeight: "500",
+    opacity: 0.8,
   },
 })

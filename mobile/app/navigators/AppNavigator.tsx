@@ -9,14 +9,15 @@ import { NavigationContainer } from "@react-navigation/native"
 import { createNativeStackNavigator, NativeStackScreenProps } from "@react-navigation/native-stack"
 
 import Config from "@/config"
-import { 
+import {
   ErrorBoundary,
   WelcomeScreen,
   CharacterSelectScreen,
   StageSelectScreen,
   GameScreen,
   WinScreen,
-  LoseScreen
+  LoseScreen,
+  LeaderboardScreen,
 } from "@/screens"
 import { useAppTheme } from "@/theme/context"
 
@@ -78,6 +79,7 @@ const AppStack = () => {
       <Stack.Screen name="Game" component={GameScreen} />
       <Stack.Screen name="Win" component={WinScreen} />
       <Stack.Screen name="Lose" component={LoseScreen} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
       {/** 🔥 Your screens go here */}
       {/* IGNITE_GENERATOR_ANCHOR_APP_STACK_SCREENS */}
     </Stack.Navigator>

@@ -203,6 +203,12 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
         <Text style={[styles.headerText, { color: theme.colors.text }]} preset="heading">
           Select Stage
         </Text>
+        <Pressable
+          style={styles.leaderboardLink}
+          onPress={() => navigation.navigate("Leaderboard")}
+        >
+          <Text style={styles.leaderboardText}>🏆 Leaderboard</Text>
+        </Pressable>
       </View>
 
       {/* Stats Bar */}
@@ -353,6 +359,17 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 28,
     fontWeight: "bold",
+  },
+  leaderboardLink: {
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  leaderboardText: {
+    color: "#00FF88",
+    fontSize: 14,
+    fontWeight: "600",
+    opacity: 0.8,
   },
   lockedText: {
     fontSize: 12,
