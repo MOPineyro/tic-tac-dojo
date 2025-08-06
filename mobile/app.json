@@ -1,32 +1,66 @@
 {
-  "expo": {
-    "name": "Tatami Tactics",
-    "slug": "tatami-tactics",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FAF5F0"
+  "name": "mobile",
+  "slug": "mobile",
+  "scheme": "mobile",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "userInterfaceStyle": "automatic",
+  "icon": "./assets/images/app-icon-all.png",
+  "updates": {
+    "fallbackToCacheTimeout": 0
+  },
+  "newArchEnabled": true,
+  "jsEngine": "hermes",
+  "assetBundlePatterns": [
+    "**/*"
+  ],
+  "android": {
+    "icon": "./assets/images/app-icon-android-legacy.png",
+    "package": "com.tictacdojo",
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/images/app-icon-android-adaptive-foreground.png",
+      "backgroundImage": "./assets/images/app-icon-android-adaptive-background.png"
     },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAF5F0"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-dev-client"
+    "allowBackup": false,
+    "edgeToEdgeEnabled": true
+  },
+  "ios": {
+    "icon": "./assets/images/app-icon-ios.png",
+    "supportsTablet": true,
+    "bundleIdentifier": "com.tictacdojo"
+  },
+  "web": {
+    "favicon": "./assets/images/app-icon-web-favicon.png",
+    "bundler": "metro"
+  },
+  "plugins": [
+    "expo-localization",
+    "expo-font",
+    [
+      "expo-splash-screen",
+      {
+        "image": "./assets/images/app-icon-android-adaptive-foreground.png",
+        "imageWidth": 300,
+        "resizeMode": "contain",
+        "backgroundColor": "#191015"
+      }
+    ],
+    [
+      "react-native-edge-to-edge",
+      {
+        "android": {
+          "parentTheme": "Light",
+          "enforceNavigationBarContrast": false
+        }
+      }
     ]
+  ],
+  "experiments": {
+    "tsconfigPaths": true
+  },
+  "extra": {
+    "ignite": {
+      "version": "11.0.1"
+    }
   }
 }

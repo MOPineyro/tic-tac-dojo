@@ -1,17 +1,7 @@
-module.exports = function(api) {
-  api.cache(true);
+/** @type {import('@babel/core').TransformOptions} */
+module.exports = function (api) {
+  api.cache(true)
   return {
-    presets: ['babel-preset-expo'],
-    plugins: [
-      [
-        '@tamagui/babel-plugin',
-        {
-          components: ['@tamagui/core'],
-          config: './tamagui.config.ts',
-          logTimings: true,
-        },
-      ],
-      'react-native-reanimated/plugin', // Must be last
-    ],
-  };
-};
+    presets: ["babel-preset-expo"],
+  }
+}
