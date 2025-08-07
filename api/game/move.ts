@@ -188,6 +188,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Get the AI level and calculate move
         const gameLevel = gameState.level || 1;
         const advancedAI = new AdvancedAIPlayer(gameLevel);
+        
+        // Apply dynamic AI settings if available (Level 4 adaptive difficulty)
+        if (gameState.aiOptimalPercentage && gameState.aiDepth && gameState.aiStrategy) {
+          advancedAI.setDynamicSettings(
+            gameState.aiOptimalPercentage,
+            gameState.aiDepth,
+            gameState.aiStrategy
+          );
+        }
+        
         const aiMove = advancedAI.getMove(newGrid, gameState.gridSize, 'O', 'X');
 
         if (aiMove !== null && aiMove !== undefined) {

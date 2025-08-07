@@ -48,46 +48,128 @@ export const GAME_LEVELS: Level[] = [
   {
     level: 3,
     name: "Warrior",
-    difficulty: 'hard',
-    description: "Battle an AI that sets tactical traps",
+    difficulty: 'medium',
+    description: "Battle an adaptive AI with improved tactics",
     gridSize: 3,
-    aiDepth: 6,
-    requiredWins: 3,
-    scoreMultiplier: 2.0,
-    unlockMessage: "Impressive! Face the Warrior AI. Win 3 games to prove your skill.",
-    optimalPlayPercentage: 70,
-    aiStrategy: 'trap',
-    behaviorDescription: "Sets up winning traps and plays optimally 70% of the time"
+    aiDepth: 3,
+    requiredWins: 2,
+    scoreMultiplier: 1.8,
+    unlockMessage: "Impressive! Face the adaptive Warrior AI. Win 2 games to prove your skill.",
+    optimalPlayPercentage: 55, // Base percentage, will scale up
+    aiStrategy: 'pattern',
+    behaviorDescription: "Adapts with each defeat - starts with 55% optimal play"
   },
   {
     level: 4,
     name: "Master",
-    difficulty: 'impossible',
-    description: "Challenge an AI with defensive mastery",
-    gridSize: 4, // Increased grid size for more complexity
-    aiDepth: 8,
-    requiredWins: 2,
-    scoreMultiplier: 3.0,
-    unlockMessage: "Incredible! The Master level with 4x4 grid. Win 2 games to reach the final stage.",
-    optimalPlayPercentage: 85,
-    aiStrategy: 'defensive',
-    behaviorDescription: "Masters defensive play and blocks all threats with 85% optimal moves"
+    difficulty: 'medium',
+    description: "Challenge an adaptive AI on a larger 4x4 battlefield",
+    gridSize: 4, // 4x4 grid for increased complexity
+    aiDepth: 4,
+    requiredWins: 3,
+    scoreMultiplier: 2.2,
+    unlockMessage: "Incredible! Face the adaptive Master on a 4x4 grid. Win 3 games as the AI grows stronger.",
+    optimalPlayPercentage: 60, // Base percentage, capped at 70%
+    aiStrategy: 'pattern',
+    behaviorDescription: "Adapts and grows stronger with each defeat - starts with 60% optimal play (max 70%)"
   },
   {
     level: 5,
     name: "Grandmaster",
-    difficulty: 'master' as any,
-    description: "Face an AI with psychological warfare tactics",
+    difficulty: 'hard',
+    description: "Face the ultimate adaptive AI with mercy and cunning",
     gridSize: 4,
-    aiDepth: Infinity,
-    requiredWins: 1,
-    scoreMultiplier: 5.0,
-    unlockMessage: "Final challenge! Defeat the Grandmaster to complete your journey.",
-    optimalPlayPercentage: 95,
-    aiStrategy: 'psychological',
-    behaviorDescription: "Uses fake mistakes and mind games while playing optimally 95% of the time"
+    aiDepth: 5,
+    requiredWins: 3,
+    scoreMultiplier: 3.0,
+    unlockMessage: "Final challenge! Defeat the adaptive Grandmaster on a 4x4 grid to complete your journey.",
+    optimalPlayPercentage: 70, // Base percentage with mercy system
+    aiStrategy: 'defensive',
+    behaviorDescription: "Ultimate adaptive AI - grows stronger with each defeat, but shows occasional mercy"
   }
 ];
+
+// Function to calculate dynamic AI difficulty based on player wins in current level
+export function getDynamicAIDifficulty(level: number, currentWins: number): {
+  optimalPlayPercentage: number;
+  aiDepth: number;
+  aiStrategy: string;
+} {
+  const levelData = GAME_LEVELS[level - 1];
+  if (!levelData) {
+    return {
+      optimalPlayPercentage: 50,
+      aiDepth: 3,
+      aiStrategy: 'basic'
+    };
+  }
+
+  // Level 3: Moderate scaling
+  if (level === 3) {
+    const basePercentage = 55;
+    const maxPercentage = 65;
+    const baseDepth = 3;
+    const maxDepth = 4;
+    
+    const progressRatio = currentWins / levelData.requiredWins;
+    
+    return {
+      optimalPlayPercentage: Math.round(basePercentage + (maxPercentage - basePercentage) * progressRatio),
+      aiDepth: Math.round(baseDepth + (maxDepth - baseDepth) * progressRatio),
+      aiStrategy: 'pattern'
+    };
+  }
+
+  // Level 4: Controlled scaling (capped at 70%)
+  if (level === 4) {
+    const basePercentage = 60;
+    const maxPercentage = 70; // Capped for winability
+    const baseDepth = 4;
+    const maxDepth = 5;
+    
+    const progressRatio = currentWins / levelData.requiredWins;
+    
+    return {
+      optimalPlayPercentage: Math.round(basePercentage + (maxPercentage - basePercentage) * progressRatio),
+      aiDepth: Math.round(baseDepth + (maxDepth - baseDepth) * progressRatio),
+      aiStrategy: currentWins >= 2 ? 'trap' : 'pattern'
+    };
+  }
+
+  // Level 5: Challenging with mercy system
+  if (level === 5) {
+    const basePercentage = 70;
+    const maxPercentage = 85;
+    const baseDepth = 5;
+    const maxDepth = 7;
+    
+    const progressRatio = currentWins / levelData.requiredWins;
+    let finalPercentage = Math.round(basePercentage + (maxPercentage - basePercentage) * progressRatio);
+    let finalDepth = Math.round(baseDepth + (maxDepth - baseDepth) * progressRatio);
+    
+    // Mercy system: If player has 0 wins, occasionally reduce difficulty
+    if (currentWins === 0) {
+      const mercyChance = 0.25; // 25% chance of mercy
+      if (Math.random() < mercyChance) {
+        finalPercentage = Math.max(60, finalPercentage - 15); // Reduce by 15%
+        finalDepth = Math.max(4, finalDepth - 1); // Reduce depth
+      }
+    }
+    
+    return {
+      optimalPlayPercentage: finalPercentage,
+      aiDepth: finalDepth,
+      aiStrategy: currentWins >= 2 ? 'trap' : 'defensive'
+    };
+  }
+
+  // For levels 1-2, return standard difficulty
+  return {
+    optimalPlayPercentage: levelData.optimalPlayPercentage,
+    aiDepth: levelData.aiDepth,
+    aiStrategy: levelData.aiStrategy
+  };
+}
 
 export interface PlayerProgress {
   playerId: string;

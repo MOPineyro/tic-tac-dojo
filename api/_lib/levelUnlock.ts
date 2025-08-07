@@ -104,21 +104,21 @@ export const LEVEL_TIMERS: GameTimer[] = [
   },
   {
     level: 3,
-    totalTimeLimit: 120, // 2 minutes - building pressure
-    moveTimeLimit: 20,   // 20 seconds per move
-    warningThreshold: 30  // Warning at 30 seconds left
+    totalTimeLimit: 150, // 2.5 minutes - more relaxed
+    moveTimeLimit: 25,   // 25 seconds per move
+    warningThreshold: 45  // Warning at 45 seconds left
   },
   {
     level: 4,
-    totalTimeLimit: 90,  // 1.5 minutes - intense pressure
-    moveTimeLimit: 15,   // 15 seconds per move
-    warningThreshold: 20  // Warning at 20 seconds left
+    totalTimeLimit: 180, // 3 minutes - 4x4 needs more time
+    moveTimeLimit: 30,   // 30 seconds per move for larger grid
+    warningThreshold: 60  // Warning at 1 minute left
   },
   {
     level: 5,
-    totalTimeLimit: 60,  // 1 minute - maximum intensity
-    moveTimeLimit: 10,   // 10 seconds per move
-    warningThreshold: 15  // Warning at 15 seconds left
+    totalTimeLimit: 150, // 2.5 minutes - more pressure for final level
+    moveTimeLimit: 25,   // 25 seconds per move for final challenge
+    warningThreshold: 45  // Warning at 45 seconds left
   }
 ];
 

@@ -29,6 +29,13 @@ export class AdvancedAIPlayer {
     this.maxDepth = levelData.aiDepth === Infinity ? 12 : levelData.aiDepth;
   }
 
+  // Method to override AI settings for dynamic difficulty
+  public setDynamicSettings(optimalPercentage: number, aiDepth: number, strategy: string): void {
+    this.optimalPlayPercentage = optimalPercentage;
+    this.strategy = strategy;
+    this.maxDepth = aiDepth === Infinity ? 12 : aiDepth;
+  }
+
   public getMove(grid: (Player | null)[], gridSize: number, aiPlayer: Player, humanPlayer: Player): number {
     const board: GameBoard = { grid, size: gridSize };
     

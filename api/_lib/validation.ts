@@ -119,6 +119,13 @@ export const schemas: { [key: string]: ValidationSchema } = {
     }
   },
   
+  gameCompletion: {
+    playerId: { type: 'string', required: true, minLength: 1 },
+    gameId: { type: 'string', required: true, minLength: 1 },
+    timeElapsed: { type: 'number', required: false, min: 0 },
+    finalGrid: { type: 'object', required: false } // Allow but don't require
+  },
+  
   scoreSubmission: {
     playerId: { type: 'string', required: true, minLength: 1 },
     score: { 

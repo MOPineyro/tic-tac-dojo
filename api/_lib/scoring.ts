@@ -10,6 +10,7 @@ export interface ScoreBreakdown {
   moveEfficiencyBonus: number;
   nearWinBonus: number;
   survivalBonus: number;
+  timeoutPenalty?: number;
   totalScore: number;
   achievements: string[];
 }

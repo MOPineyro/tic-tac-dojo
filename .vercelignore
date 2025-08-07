@@ -1,0 +1,12 @@
+# Ignore the entire mobile directory
+mobile/
+
+# Ignore common development files
+.env.local
+.env.development
+.env.test
+node_modules/
+.git/
+.gitignore
+README.md
+*.log

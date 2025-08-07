@@ -2,7 +2,7 @@
 export type Player = 'X' | 'O';
 export type GameMode = 'single' | 'multiplayer' | 'ai';
 export type GameState = 'notStarted' | 'waiting' | 'active' | 'finished';
-export type Difficulty = 'easy' | 'medium' | 'hard' | 'impossible';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'impossible' | 'master';
 
 // Game board
 export interface GameBoard {
@@ -38,6 +38,12 @@ export interface Game {
   moveTimeLimit?: number;
   timeRemaining?: number;
   lastMoveTime?: string;
+  timeoutLoss?: boolean;
+  // Dynamic AI fields (Level 4 adaptive difficulty)
+  aiOptimalPercentage?: number;
+  aiDepth?: number;
+  aiStrategy?: string;
+  currentWins?: number;
   createdAt?: any; // Firestore timestamp
   lastUpdate?: any; // Firestore timestamp
 }
@@ -113,6 +119,7 @@ export interface PlayerData {
   wins: number;
   losses: number;
   draws: number;
+  timeoutLosses?: number;
   // Level progression
   currentLevel: number;
   levelProgress: { [level: number]: { wins: number; losses: number; completed: boolean } };

@@ -2,12 +2,12 @@ import { gameCreateRateLimit, checkRateLimit } from '../_lib/ratelimit';
 import { validateSchema, schemas, sanitizeInput } from '../_lib/validation';
 import { createGame } from '../_lib/database';
 import { getClientIdentifier, createAnonymousSession } from '../_lib/auth';
-import { GAME_LEVELS, getCurrentLevel } from '../_lib/levelSystem';
+import { GAME_LEVELS, getCurrentLevel, getDynamicAIDifficulty } from '../_lib/levelSystem';
 import { LevelUnlockManager } from '../_lib/levelUnlock';
 import { getPlayerData } from '../_lib/database';
 import { formatGameState } from '../_lib/types';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { CreateGameRequest, CreateGameResponse, APIError, Player, GameState } from '../_lib/types';
+import type { CreateGameRequest, CreateGameResponse, APIError, Player, GameState, GameMode } from '../_lib/types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Only allow POST requests
@@ -68,10 +68,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Get timer configuration for this level
     const timerConfig = LevelUnlockManager.getTimerConfig(targetLevel);
     
+    // Get current wins for dynamic difficulty (Level 4 specific)
+    const currentWins = playerData.levelProgress[targetLevel]?.wins || 0;
+    const dynamicDifficulty = getDynamicAIDifficulty(targetLevel, currentWins);
+    
     // Create game data using level settings
     const gameData = {
       players: [playerId],
-      gameMode: 'ai', // Always AI for level progression
+      gameMode: 'ai' as GameMode, // Always AI for level progression
       difficulty: levelData.difficulty,
       gridSize: levelData.gridSize,
       level: targetLevel,
@@ -88,7 +92,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       totalTimeLimit: timerConfig.totalTimeLimit,
       moveTimeLimit: timerConfig.moveTimeLimit,
       timeRemaining: timerConfig.totalTimeLimit,
-      lastMoveTime: new Date().toISOString()
+      lastMoveTime: new Date().toISOString(),
+      // Dynamic AI settings (Level 4 adaptive difficulty)
+      aiOptimalPercentage: dynamicDifficulty.optimalPlayPercentage,
+      aiDepth: dynamicDifficulty.aiDepth,
+      aiStrategy: dynamicDifficulty.aiStrategy,
+      currentWins: currentWins
     };
 
     // For AI games, add AI player
@@ -116,9 +125,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         level: targetLevel,
         name: levelData.name,
         description: levelData.description,
-        aiStrategy: levelData.aiStrategy,
-        optimalPlayPercentage: levelData.optimalPlayPercentage,
-        behaviorDescription: levelData.behaviorDescription
+        aiStrategy: dynamicDifficulty.aiStrategy,
+        optimalPlayPercentage: dynamicDifficulty.optimalPlayPercentage,
+        aiDepth: dynamicDifficulty.aiDepth,
+        behaviorDescription: targetLevel >= 3 ? 
+          `Adaptive AI - Game ${currentWins + 1}/${levelData.requiredWins}: ${dynamicDifficulty.optimalPlayPercentage}% optimal, strategy: ${dynamicDifficulty.aiStrategy}${targetLevel === 5 && currentWins === 0 ? ' (mercy possible)' : ''}` : 
+          levelData.behaviorDescription,
+        currentWins: currentWins,
+        requiredWins: levelData.requiredWins
       }
     });
 
