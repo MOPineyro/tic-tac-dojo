@@ -12,6 +12,18 @@
 
 Tic-Tac-Dojo is a React Native mobile game that transforms the classic game of Tic-Tac-Toe into a progressive martial arts journey. Players advance through increasingly challenging AI opponents, each representing a different level of mastery in the ancient art of X's and O's.
 
+## Try It Now! 🎮
+
+<p align="center">
+  <strong>Play Tic-Tac-Dojo directly in your browser:</strong>
+</p>
+
+<p align="center">
+  <a href="https://appetize.io/app/b_bnaba5gob6yfe4mo2jkb2kdjvi" target="_blank">
+    <img src="https://img.shields.io/badge/▶️_Try_Live_Demo-FF6B6B?style=for-the-badge&logo=play&logoColor=white" alt="Try Live Demo" />
+  </a>
+</p>
+
 ## Screenshots
 
 <p align="center">
