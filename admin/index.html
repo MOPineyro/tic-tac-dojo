@@ -9,7 +9,6 @@
 </head>
 <body>
     <div class="admin-container">
-        <!-- Header -->
         <header class="admin-header">
             <div class="header-content">
                 <h1><i class="fas fa-shield-alt"></i> Tic-Tac-Dojo Admin Panel</h1>
@@ -24,7 +23,6 @@
             </div>
         </header>
 
-        <!-- Login Modal -->
         <div id="login-modal" class="modal active">
             <div class="modal-content">
                 <h2><i class="fas fa-lock"></i> Admin Authentication</h2>
@@ -41,9 +39,7 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <main class="admin-main">
-            <!-- Navigation Tabs -->
             <nav class="admin-nav">
                 <button class="nav-tab active" data-tab="dashboard">
                     <i class="fas fa-chart-pie"></i> Dashboard
@@ -56,10 +52,8 @@
                 </button>
             </nav>
 
-            <!-- Dashboard Tab -->
             <section id="dashboard-tab" class="tab-content active">
                 <div class="dashboard-grid">
-                    <!-- System Stats Cards -->
                     <div class="stat-card">
                         <div class="stat-icon">
                             <i class="fas fa-users"></i>
@@ -105,24 +99,19 @@
                     </div>
                 </div>
 
-                <!-- Level Distribution Chart -->
                 <div class="chart-container">
                     <h3><i class="fas fa-chart-bar"></i> Player Distribution by Level</h3>
                     <div id="level-chart" class="level-chart">
-                        <!-- Dynamically populated -->
                     </div>
                 </div>
 
-                <!-- Win Rates Chart -->
                 <div class="chart-container">
                     <h3><i class="fas fa-percentage"></i> Player Win Rates by Level</h3>
                     <div id="winrate-chart" class="winrate-chart">
-                        <!-- Dynamically populated -->
                     </div>
                 </div>
             </section>
 
-            <!-- Users Management Tab -->
             <section id="users-tab" class="tab-content">
                 <div class="users-controls">
                     <div class="search-controls">
@@ -145,7 +134,6 @@
                     </div>
                 </div>
 
-                <!-- Bulk Actions Toolbar -->
                 <div id="bulk-actions-toolbar" class="bulk-actions-toolbar" style="display: none;">
                     <div class="bulk-actions-info">
                         <span id="selected-count">0</span> users selected
@@ -181,8 +169,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Dynamically populated -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
 
@@ -197,12 +184,10 @@
                 </div>
             </section>
 
-            <!-- Admin Logs Tab -->
             <section id="logs-tab" class="tab-content">
                 <div class="logs-container">
                     <h3><i class="fas fa-history"></i> Recent Admin Actions</h3>
                     <div id="logs-list" class="logs-list">
-                        <!-- Dynamically populated -->
                     </div>
                     <div class="pagination">
                         <button id="logs-prev-page" class="btn btn-secondary">
@@ -218,7 +203,6 @@
         </main>
     </div>
 
-    <!-- User Edit Modal -->
     <div id="user-edit-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -253,7 +237,6 @@
         </div>
     </div>
 
-    <!-- Points Adjustment Modal -->
     <div id="points-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -279,7 +262,6 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner">
             <i class="fas fa-spinner fa-spin"></i>

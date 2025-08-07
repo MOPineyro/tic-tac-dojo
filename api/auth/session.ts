@@ -7,19 +7,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CreateSessionRequest, CreateSessionResponse, APIError } from '../_lib/types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Get client identifier for rate limiting
     const identifier = getClientIdentifier(req);
     
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(authRateLimit, identifier);
     
-    // Set rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
       res.setHeader(key, value);
     });
@@ -32,10 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { sessionType = 'anonymous', playerName } = sanitizedBody;
 
     if (sessionType === 'anonymous') {
-      // Create anonymous session
       const session = createAnonymousSession();
       
-      // Store basic player info in Firebase with level progression
       const db = await initializeFirebase();
       const progress = initializePlayerProgress(session.playerId);
       
@@ -49,7 +43,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         wins: 0,
         losses: 0,
         draws: 0,
-        // Level progression system
         currentLevel: progress.currentLevel,
         levelProgress: progress.levelProgress,
         totalScore: progress.totalScore,

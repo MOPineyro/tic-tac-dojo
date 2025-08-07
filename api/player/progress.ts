@@ -5,7 +5,6 @@ import { GAME_LEVELS, getCurrentLevel, getNextLevel, canAdvanceToNextLevel, init
 import { LevelUnlockManager } from '../_lib/levelUnlock';
 import type { PlayerData } from '../_lib/types';
 
-// Handle level unlocking with codes
 async function handleLevelUnlock(req: VercelRequest, res: VercelResponse) {
   try {
     const { playerId, targetLevel, unlockCode } = req.body;
@@ -14,7 +13,6 @@ async function handleLevelUnlock(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Get player data
     const db = await initializeFirebase();
     const playerDoc = await db.collection('players').doc(playerId).get();
     
@@ -24,7 +22,6 @@ async function handleLevelUnlock(req: VercelRequest, res: VercelResponse) {
     
     const playerData = { id: playerDoc.id, ...playerDoc.data() } as PlayerData;
 
-    // Attempt to unlock the level
     const unlockResult = LevelUnlockManager.unlockLevelWithCode(
       playerData,
       targetLevel,
@@ -38,7 +35,6 @@ async function handleLevelUnlock(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Update player's current level in database
     await db.collection('players').doc(playerId).update({
       currentLevel: unlockResult.newCurrentLevel,
       lastActive: new Date().toISOString()
@@ -98,7 +94,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         playerData.totalScore = progress.totalScore || 0;
         playerData.achievements = progress.achievements || [];
         
-        // Update in database
         await playerRef.update({
           currentLevel: playerData.currentLevel,
           levelProgress: playerData.levelProgress,

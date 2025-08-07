@@ -1,4 +1,3 @@
-// Global variables
 let adminKey = '';
 let currentPage = 1;
 let logsCurrentPage = 1;
@@ -7,18 +6,14 @@ let logsTotalPages = 1;
 const PAGE_SIZE = 20;
 let selectedUsers = new Set(); // Track selected user IDs
 
-// API Base URL
 const API_BASE = window.location.origin;
 
-// DOM Elements
 const loginModal = document.getElementById('login-modal');
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const loadingOverlay = document.getElementById('loading-overlay');
 
-// Initialize the admin panel
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if admin key is stored
     const storedKey = localStorage.getItem('tic-tac-dojo-admin-key');
     if (storedKey) {
         adminKey = storedKey;
@@ -31,23 +26,17 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
 });
 
-// Event Listeners
 function setupEventListeners() {
-    // Login form
     loginForm.addEventListener('submit', handleLogin);
     
-    // Logout button
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
     
-    // Refresh button
     document.getElementById('refresh-btn').addEventListener('click', refreshCurrentTab);
     
-    // Navigation tabs
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
     
-    // User search and filters
     document.getElementById('search-btn').addEventListener('click', searchUsers);
     document.getElementById('user-search').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') searchUsers();
@@ -55,28 +44,23 @@ function setupEventListeners() {
     document.getElementById('sort-by').addEventListener('change', searchUsers);
     document.getElementById('sort-order').addEventListener('change', searchUsers);
     
-    // Pagination
     document.getElementById('prev-page').addEventListener('click', () => navigatePage(-1));
     document.getElementById('next-page').addEventListener('click', () => navigatePage(1));
     document.getElementById('logs-prev-page').addEventListener('click', () => navigateLogsPage(-1));
     document.getElementById('logs-next-page').addEventListener('click', () => navigateLogsPage(1));
     
-    // Bulk actions
     document.getElementById('select-all-checkbox').addEventListener('change', handleSelectAllCheckbox);
     document.getElementById('select-all-btn').addEventListener('click', selectAllUsers);
     document.getElementById('clear-selection-btn').addEventListener('click', clearSelection);
     document.getElementById('bulk-delete-btn').addEventListener('click', handleBulkDelete);
     
-    // Modal close buttons
     document.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', closeModals);
     });
     
-    // Form submissions
     document.getElementById('user-edit-form').addEventListener('submit', window.handleUserEdit);
     document.getElementById('points-form').addEventListener('submit', window.handlePointsAdjustment);
     
-    // Close modals when clicking outside
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             closeModals();
@@ -84,7 +68,6 @@ function setupEventListeners() {
     });
 }
 
-// Authentication
 async function handleLogin(e) {
     e.preventDefault();
     const key = document.getElementById('admin-key').value;
@@ -97,7 +80,6 @@ async function handleLogin(e) {
     showLoading();
     
     try {
-        // Test the admin key by making a request to the stats endpoint
         const response = await fetch(`${API_BASE}/api/admin?action=stats`, {
             headers: {
                 'x-admin-key': key
@@ -128,7 +110,6 @@ function handleLogout() {
     clearError();
 }
 
-// UI Functions
 function showLoginModal() {
     loginModal.classList.add('active');
 }
@@ -161,21 +142,17 @@ function closeModals() {
     });
 }
 
-// Tab Navigation
 function switchTab(tabName) {
-    // Update nav tabs
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.classList.remove('active');
     });
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     
-    // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
     document.getElementById(`${tabName}-tab`).classList.add('active');
     
-    // Load content for the tab
     switch (tabName) {
         case 'dashboard':
             loadDashboard();
@@ -196,7 +173,6 @@ function refreshCurrentTab() {
     }
 }
 
-// Dashboard Functions
 async function loadDashboard() {
     showLoading();
     
@@ -222,7 +198,6 @@ async function loadDashboard() {
 }
 
 function displayDashboardStats(stats) {
-    // Update stat cards
     document.getElementById('total-players').textContent = stats.players.total.toLocaleString();
     document.getElementById('active-players').textContent = `${stats.players.active} active this week`;
     document.getElementById('total-games').textContent = stats.games.total.toLocaleString();
@@ -232,10 +207,8 @@ function displayDashboardStats(stats) {
     document.getElementById('new-today').textContent = stats.players.newToday.toLocaleString();
     document.getElementById('games-today').textContent = `${stats.games.newToday} games today`;
     
-    // Update level distribution chart
     updateLevelChart(stats.players.byLevel);
     
-    // Update win rates chart
     updateWinRateChart(stats.games.winRatesByLevel);
 }
 
@@ -283,7 +256,6 @@ function updateWinRateChart(winRateData) {
     }
 }
 
-// Users Management Functions
 async function loadUsers() {
     const search = document.getElementById('user-search').value;
     const sortBy = document.getElementById('sort-by').value;
@@ -369,12 +341,10 @@ function displayUsers(users) {
         tbody.appendChild(row);
     });
     
-    // Add event listeners to checkboxes
     document.querySelectorAll('.user-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', handleUserCheckboxChange);
     });
     
-    // Update bulk actions toolbar
     updateBulkActionsToolbar();
     updateSelectAllCheckbox();
 }
@@ -403,7 +373,6 @@ function navigatePage(direction) {
     }
 }
 
-// User Actions
 window.editUser = async function(userId) {
     try {
         showLoading();
@@ -421,13 +390,11 @@ window.editUser = async function(userId) {
         const data = await response.json();
         const user = data.user;
         
-        // Populate form
         document.getElementById('edit-user-id').value = user.id;
         document.getElementById('edit-player-name').value = user.playerName || '';
         document.getElementById('edit-total-score').value = user.totalScore || 0;
         document.getElementById('edit-current-level').value = user.currentLevel || 1;
         
-        // Show modal
         document.getElementById('user-edit-modal').classList.add('active');
         
     } catch (error) {
@@ -560,7 +527,6 @@ window.deleteUser = async function(userId) {
     }
 }
 
-// Admin Logs Functions
 async function loadAdminLogs() {
     showLoading();
     
@@ -644,9 +610,7 @@ function navigateLogsPage(direction) {
     }
 }
 
-// Utility Functions
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     
@@ -693,7 +657,6 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Bulk Actions Functions
 function handleUserCheckboxChange(e) {
     const userId = e.target.dataset.userId;
     const row = e.target.closest('tr');
@@ -830,7 +793,6 @@ async function handleBulkDelete() {
             }
         }
         
-        // Clear selection and reload users
         clearSelection();
         loadUsers();
         
@@ -850,7 +812,6 @@ async function handleBulkDelete() {
     }
 }
 
-// Add CSS for notification animations
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideInRight {

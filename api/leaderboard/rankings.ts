@@ -5,7 +5,7 @@ import { GAME_LEVELS } from '../_lib/levelSystem';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { LeaderboardResponse, APIError } from '../_lib/types';
 
-// Admin function to handle cheat reports
+/** Admin function to handle cheat reports */
 async function handleCheatReports(req: VercelRequest, res: VercelResponse) {
   try {
     const { limit = 20, riskThreshold = 30 } = req.query;
@@ -14,7 +14,6 @@ async function handleCheatReports(req: VercelRequest, res: VercelResponse) {
 
     const db = await initializeFirebase();
     
-    // Get cheat reports sorted by risk score and timestamp
     const reportsSnapshot = await db.collection('cheatReports')
       .where('riskScore', '>=', riskNum)
       .orderBy('riskScore', 'desc')
@@ -25,11 +24,9 @@ async function handleCheatReports(req: VercelRequest, res: VercelResponse) {
     const reports = reportsSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      // Don't expose full game state in summary
       gameState: undefined
     }));
 
-    // Get summary statistics
     const totalReportsSnapshot = await db.collection('cheatReports').get();
     const highRiskReports = totalReportsSnapshot.docs.filter(doc => 
       (doc.data().riskScore || 0) >= 70
@@ -79,12 +76,10 @@ interface RankingEntry {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow GET requests
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Check for admin access to cheat reports
   const adminKey = req.headers['x-admin-key'];
   const isAdmin = adminKey === process.env.ADMIN_KEY;
   
@@ -96,13 +91,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Get client identifier for rate limiting
     const identifier = getClientIdentifier(req);
     
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(leaderboardRateLimit, identifier);
     
-    // Set rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
       res.setHeader(key, value);
     });
@@ -121,33 +113,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sortCriteria = Array.isArray(sortBy) ? sortBy[0] : sortBy;
     const filterLevel = Array.isArray(level) ? level[0] : level;
 
-    // Initialize Firebase connection
     const db = await initializeFirebase();
     
-    // Build query based on filters
     let query = db.collection('players')
       .where('gamesPlayed', '>', 0);
 
-    // Apply level filter if specified
     if (filterLevel !== 'all' && !isNaN(parseInt(filterLevel))) {
       const levelNum = parseInt(filterLevel);
       query = query.where('currentLevel', '>=', levelNum);
     }
 
-    // Get players data
-    const playersSnapshot = await query.limit(maxLimit * 2).get(); // Get extra to handle sorting
+    const playersSnapshot = await query.limit(maxLimit * 2).get();
 
     const rankings: RankingEntry[] = [];
 
     playersSnapshot.docs.forEach(doc => {
       const playerData = doc.data();
       
-      // Skip players with no meaningful progress
       if (!playerData.totalScore || playerData.totalScore <= 0) {
         return;
       }
 
-      // Calculate highest level reached
       let highestLevel = playerData.currentLevel || 1;
       if (playerData.levelProgress) {
         for (let checkLevel = 5; checkLevel >= 1; checkLevel--) {
@@ -158,13 +144,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // Skip if level filter doesn't match
       if (filterLevel !== 'all' && !isNaN(parseInt(filterLevel))) {
         const levelNum = parseInt(filterLevel);
         if (highestLevel < levelNum) return;
       }
 
-      // Build level progress summary
       const levelProgress: any = {};
       for (let lvl = 1; lvl <= 5; lvl++) {
         const progress = playerData.levelProgress?.[lvl] || { wins: 0, losses: 0, completed: false };
@@ -176,7 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const entry: RankingEntry = {
-        rank: 0, // Will be set after sorting
+        rank: 0,
         playerId: playerData.playerId,
         playerName: playerData.playerName || 'Anonymous Player',
         totalScore: playerData.totalScore || 0,
@@ -193,14 +177,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       rankings.push(entry);
     });
 
-    // Sort by requested criteria
     switch (sortCriteria) {
       case 'highestLevel':
         rankings.sort((a, b) => {
           if (b.highestLevel !== a.highestLevel) {
             return b.highestLevel - a.highestLevel;
           }
-          return b.totalScore - a.totalScore; // Tie-breaker
+          return b.totalScore - a.totalScore;
         });
         break;
       case 'averageScore':
@@ -209,18 +192,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'gamesPlayed':
         rankings.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
         break;
-      default: // totalScore
+      default:
         rankings.sort((a, b) => b.totalScore - a.totalScore);
         break;
     }
 
-    // Limit results and add ranks
     const finalRankings = rankings.slice(0, maxLimit).map((entry, index) => ({
       ...entry,
       rank: index + 1
     }));
 
-    // Prepare response
     const response: LeaderboardResponse = {
       success: true,
       rankings: finalRankings,

@@ -7,16 +7,14 @@ import { AntiCheatValidator } from '../_lib/antiCheat';
 import { LevelUnlockManager } from '../_lib/levelUnlock';
 import type { PlayerData, Player, Game } from '../_lib/types';
 
-// Helper function to detect if game ended due to timeout
+/** Helper function to detect if game ended due to timeout */
 function checkTimeoutLoss(gameState: Game): boolean {
-  // Check if time has expired
   if (gameState.totalTimeLimit && gameState.timeRemaining !== undefined) {
     if (gameState.timeRemaining <= 0) {
       return true;
     }
   }
   
-  // Check if move time limit was exceeded (if lastMoveTime is available)
   if (gameState.moveTimeLimit && gameState.lastMoveTime) {
     const timeSinceLastMove = Date.now() - new Date(gameState.lastMoveTime).getTime();
     const timeSinceLastMoveSeconds = Math.floor(timeSinceLastMove / 1000);
@@ -26,7 +24,6 @@ function checkTimeoutLoss(gameState: Game): boolean {
     }
   }
   
-  // Check if the game state explicitly indicates a timeout loss
   if (gameState.timeoutLoss) {
     return true;
   }
@@ -67,7 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`Game completion request: gameId=${gameId}, playerId=${playerId}`);
 
-    // Additional validation for required fields (redundant but safe)
     if (!playerId || !gameId) {
       console.log('Missing required fields:', { playerId, gameId });
       return res.status(400).json({ error: 'Missing required fields' });
@@ -84,39 +80,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Game not found' });
     }
 
-    // Validate player access to this game
     if (!gameState.players.includes(playerId)) {
       console.log(`Access denied: player ${playerId} not in game ${gameId} players:`, gameState.players);
       return res.status(403).json({ error: 'Access denied - not your game' });
     }
 
-    // Only allow finalization of finished games
     if (gameState.gameState !== 'finished') {
       console.log(`Game not finished: gameState=${gameState.gameState}, will attempt to finish it`);
-      // Don't immediately reject - we might need to finish it due to timeout
     }
 
-    // Prevent double-processing by checking if game was already finalized
     if (gameState.finalized) {
       console.log(`Game already finalized: ${gameId}`);
       return res.status(400).json({ error: 'Game already finalized' });
     }
 
-    // Extract authoritative game data from database
     const level = gameState.level || 1;
     const gridSize = gameState.gridSize || 3;
     const finalGrid = gameState.grid;
     const winner = gameState.winner;
     const moveHistory = gameState.moveHistory || [];
 
-    // Check if this was a timeout loss
     const isTimeoutLoss = checkTimeoutLoss(gameState);
     console.log(`Timeout check for game ${gameId}: isTimeout=${isTimeoutLoss}, winner=${winner}, gameState=${gameState.gameState}`);
     
-    // If timeout detected, ensure game is properly finished
     if (isTimeoutLoss) {
       console.log(`Processing timeout loss for game ${gameId}`);
-      // Update game state to reflect timeout loss
       const db = await initializeFirebase();
       const gameRef = db.collection('games').doc(gameId);
       
@@ -126,7 +114,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         timeoutLoss: true
       };
       
-      // Set winner if not already set
       if (!winner) {
         updateData.winner = 'O'; // AI wins on timeout
         gameState.winner = 'O';
@@ -134,7 +121,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       await gameRef.update(updateData);
       
-      // Update local state for processing
       gameState.gameState = 'finished';
       gameState.timeoutLoss = true;
       if (!gameState.finishedAt) {
@@ -142,7 +128,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
     
-    // Now check if game is finished (after potential timeout update)
     if (gameState.gameState !== 'finished') {
       console.log(`Game ${gameId} is still not finished after timeout check: ${gameState.gameState}`);
       return res.status(400).json({ error: 'Game is not finished yet' });
@@ -157,7 +142,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!cheatCheck.isValid) {
         console.warn(`CHEAT DETECTED for player ${playerId} in game ${gameId}:`, cheatCheck.violations);
         
-        // Log the incident but don't block legitimate players
         const db = await initializeFirebase();
         await db.collection('cheatReports').add({
           playerId,
@@ -174,7 +158,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         });
 
-        // For high-risk violations, reject the game
         if (cheatCheck.riskScore > 70) {
           return res.status(400).json({ 
             error: 'Game validation failed',
@@ -186,7 +169,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`Skipping anti-cheat validation for timeout loss with no moves: game ${gameId}`);
     }
     
-    // Determine if the human player won based on server-side game state (use updated winner)
     const humanPlayer: Player = 'X';
     const finalWinner = gameState.winner; // Use updated winner from timeout processing
     const won = finalWinner === humanPlayer;
@@ -195,7 +177,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     console.log(`Winner determination: originalWinner=${winner}, finalWinner=${finalWinner}, won=${won}, isDraw=${isDraw}, wasTimeoutLoss=${wasTimeoutLoss}`);
 
-    // Reconstruct move history from game state  
     const playerMoves: number[] = [];
     const aiMoves: number[] = [];
     
@@ -204,7 +185,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (cell === 'O') aiMoves.push(index);
     });
 
-    // Get player data
     let playerData: PlayerData;
     try {
       playerData = await getPlayerData(playerId);
@@ -214,7 +194,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Player not found' });
     }
 
-    // Get level data
     const levelData = getCurrentLevel({
       playerId: playerData.playerId,
       currentLevel: level,
@@ -224,7 +203,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       achievements: playerData.achievements || []
     });
 
-    // Analyze the game performance
     const gameAnalysis = AdvancedScoringSystem.analyzeGame(
       playerMoves,
       aiMoves,
@@ -233,7 +211,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       finalWinner
     );
 
-    // Calculate time bonus if game had timer
     let timeBonus = 0;
     if (gameState.totalTimeLimit && gameState.timeRemaining) {
       timeBonus = LevelUnlockManager.calculateTimeBonus(
@@ -242,7 +219,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
 
-    // Calculate detailed score breakdown
     const scoreBreakdown = AdvancedScoringSystem.calculateGameScore(
       level,
       won,
@@ -250,21 +226,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       timeElapsed || 60000
     );
     
-    // Apply timeout loss penalty
     if (wasTimeoutLoss && !won) {
-      // Apply significant penalty for timeout losses
       const timeoutPenalty = Math.floor(scoreBreakdown.totalScore * 0.5); // 50% penalty
       scoreBreakdown.timeoutPenalty = timeoutPenalty;
       scoreBreakdown.totalScore = Math.max(0, scoreBreakdown.totalScore - timeoutPenalty);
     }
     
-    // Add time bonus to score breakdown (only if not a timeout loss)
     if (!wasTimeoutLoss) {
       scoreBreakdown.timeBonus += timeBonus;
       scoreBreakdown.totalScore += timeBonus;
     }
 
-    // Update player progress
     const progressResult = updatePlayerProgress(
       {
         playerId: playerData.playerId,
@@ -279,11 +251,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       scoreBreakdown.totalScore
     );
 
-    // Update database with atomic transaction
     const db = await initializeFirebase();
     const batch = db.batch();
     
-    // Update player data
     const playerRef = db.collection('players').doc(playerId);
     batch.update(playerRef, {
       currentLevel: progressResult.progress.currentLevel,
@@ -299,7 +269,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(progressResult.completed ? { completedAt: progressResult.progress.completedAt } : {})
     });
 
-    // Mark game as finalized to prevent double-processing
     const gameRef = db.collection('games').doc(gameId);
     batch.update(gameRef, {
       finalized: true,
@@ -307,7 +276,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       finalScore: scoreBreakdown.totalScore
     });
 
-    // Store score record for leaderboard
     const scoreRef = db.collection('scores').doc();
     batch.set(scoreRef, {
       playerId,
@@ -323,10 +291,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       createdAt: new Date()
     });
 
-    // Commit all updates atomically
     await batch.commit();
 
-    // Prepare response
     const response: any = {
       success: true,
       result: {
@@ -351,7 +317,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     };
 
-    // Add next level info if leveled up
     if (progressResult.levelUp) {
       const nextLevel = getNextLevel(level);
       if (nextLevel) {
@@ -366,7 +331,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Add completion message if game completed
     if (progressResult.completed) {
       response.completionMessage = "Congratulations! You have mastered all levels of Tic-Tac-Dojo!";
     }

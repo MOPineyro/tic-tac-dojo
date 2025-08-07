@@ -10,19 +10,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { CreateGameRequest, CreateGameResponse, APIError, Player, GameState, GameMode } from '../_lib/types';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Get client identifier for rate limiting
     const identifier = getClientIdentifier(req);
     
-    // Check rate limit
     const rateLimitResult = await checkRateLimit(gameCreateRateLimit, identifier);
     
-    // Set rate limit headers
     Object.entries(rateLimitResult.headers).forEach(([key, value]) => {
       res.setHeader(key, value);
     });

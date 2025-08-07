@@ -79,7 +79,7 @@ The game features 5 distinct AI personalities with increasing difficulty:
 ### Backend API
 - **Vercel** serverless functions
 - **Firebase Firestore** for data persistence
-- **Auth0** for authentication
+- **Firebase Authentication** for user authentication
 - **Advanced AI algorithms** for opponent behavior
 - **Rate limiting** and security measures
 
@@ -102,9 +102,9 @@ The game is deployed and ready to play! The backend API is hosted on Vercel and 
 https://tic-tac-dojo.vercel.app
 ```
 
-### Running the Web Version
+### Running on Mobile Devices
 
-The app includes React Native Web support! To run it as a web app:
+#### iOS Development Setup
 
 ```bash
 # Navigate to the mobile directory
@@ -113,28 +113,44 @@ cd mobile
 # Install dependencies
 npm install
 
-# Start the web development server
-npm run web
+# Install iOS dependencies (macOS only)
+cd ios && pod install && cd ..
 
-# Build for production
-npm run bundle:web
+# Start the development server
+npm start
 
-# Serve the production build locally
-npm run serve:web
+# Run on iOS simulator
+npm run ios
+
+# Or run on physical iOS device (requires Apple Developer account)
+npx expo run:ios --device
 ```
 
-The web version uses:
-- localStorage instead of react-native-mmkv for data persistence
-- Web-compatible versions of native modules
-- Same React Native codebase with platform-specific adaptations
+#### Android Development Setup
 
-### Deployment Options
+```bash
+# Navigate to the mobile directory
+cd mobile
 
-You can deploy the web build to:
-- **Vercel**: Deploy the `mobile/dist` folder after running `npm run bundle:web`
-- **Netlify**: Similar to Vercel, deploy the `dist` folder
-- **GitHub Pages**: Push the built files to a gh-pages branch
-- **Any static hosting**: The web build is a standard static site
+# Install dependencies
+npm install
+
+# Start the development server
+npm start
+
+# Run on Android emulator/device
+npm run android
+
+# Or run with Expo
+npx expo run:android
+```
+
+#### Prerequisites
+
+- **For iOS**: macOS with Xcode installed
+- **For Android**: Android Studio with SDK and emulator setup
+- **Node.js** 16+ and npm
+- **Expo CLI**: `npm install -g @expo/cli`
 
 ## Game Mechanics
 

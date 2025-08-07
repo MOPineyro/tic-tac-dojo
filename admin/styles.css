@@ -1,4 +1,3 @@
-/* Reset and Base Styles */
 * {
     margin: 0;
     padding: 0;
@@ -12,14 +11,12 @@ body {
     color: #333;
 }
 
-/* Container */
 .admin-container {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-/* Header */
 .admin-header {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);

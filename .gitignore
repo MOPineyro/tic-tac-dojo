@@ -18,6 +18,15 @@ dist/
 build/
 .next/
 
+# Mobile app builds
+*.apk
+*.aab
+*.ipa
+*.app
+mobile/build-*.apk
+mobile/*.apk
+mobile/*.ipa
+
 # Logs
 logs/
 *.log
