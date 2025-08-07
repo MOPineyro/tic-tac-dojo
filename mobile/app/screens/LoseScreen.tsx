@@ -182,11 +182,11 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
           */}
 
           {/* Lives remaining indicator */}
-          <View style={styles.livesContainer}>
+          {/* <View style={styles.livesContainer}>
             <Text style={[styles.livesText, { color: theme.colors.textDim }]}>
               Lives remaining: ⚔️ ⚔️ ⚔️
             </Text>
-          </View>
+          </View> */}
         </Animated.View>
       </Animated.View>
     </Screen>

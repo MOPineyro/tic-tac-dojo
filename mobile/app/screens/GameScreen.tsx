@@ -518,11 +518,14 @@ export const GameScreen = ({ navigation, route }: GameScreenProps) => {
       gameState === "finished" && getWinningLine(gameData?.grid || [])?.includes(index)
 
     const handlePress = () => {
+      console.log(`Cell pressed: ${index}, Grid size: ${gameData?.gridSize}, Value: ${value}`)
       animateCellPress(index)
       handleCellPress(index)
     }
 
-    const cellSize = gameData?.gridSize === 4 ? 76 : 76 // Keep same size for now, adjust spacing instead
+    // Calculate exact cell size based on grid size and gaps
+    const gridSize = gameData?.gridSize || 3
+    const cellSize = gridSize === 4 ? 78 : 78 // 78px cells for both grids
 
     return (
       <Animated.View style={cellAnimatedStyles[index]}>
@@ -552,6 +555,8 @@ export const GameScreen = ({ navigation, route }: GameScreenProps) => {
           disabled={
             !gameData || gameState !== "active" || value !== null || gameData.currentPlayer !== "X"
           }
+          hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
+          android_ripple={{ color: theme.colors.border, borderless: false }}
         >
           {value && (
             <Text style={[styles.cellText, isWinningCell && styles.winningCellText]}>{value}</Text>
@@ -577,13 +582,6 @@ export const GameScreen = ({ navigation, route }: GameScreenProps) => {
         {/* Only show game when we have data and no error */}
         {gameData && !error && (
           <>
-            {/* Header with Score */}
-            <View style={styles.headerSection}>
-              <Text style={[styles.scoreText, { color: theme.colors.text }]}>
-                Points: {(localScore || 0).toLocaleString()}
-              </Text>
-            </View>
-
             {/* Opponent Section */}
             <Animated.View style={[styles.opponentSection, opponentAnimatedStyle]}>
               <Text style={styles.opponentAvatar}>{opponent.avatar}</Text>
@@ -672,8 +670,13 @@ export const GameScreen = ({ navigation, route }: GameScreenProps) => {
                   {gameData.currentPlayer === "X" ? "Your Turn" : "Opponent's Turn"}
                 </Text>
               </View>
-              <Text style={styles.playerAvatar}>🛡️</Text>
-              <Text style={[styles.playerName, { color: theme.colors.text }]}>You</Text>
+              <View style={styles.playerNameSection}>
+                <Text style={styles.playerAvatar}>🛡️</Text>
+                <Text style={[styles.playerName, { color: theme.colors.text }]}>You</Text>
+                {/* <Text style={[styles.scoreText, { color: theme.colors.textDim }]}>
+                  Points: {(localScore || 0).toLocaleString()}
+                </Text> */}
+              </View>
             </View>
           </>
         )}
@@ -737,9 +740,11 @@ const styles = StyleSheet.create({
   gameBoard: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 4,
+    gap: 2, // Small consistent gap
     height: 240,
     width: 240,
+    alignItems: "flex-start",
+    alignContent: "flex-start",
   },
   gameCell: {
     alignItems: "center",
@@ -749,11 +754,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 76,
   },
-  headerSection: {
-    alignItems: "center",
-    paddingBottom: spacing.sm,
-    paddingTop: spacing.lg,
-  },
+
   infoButton: {
     marginLeft: spacing.xs,
     padding: spacing.xxs,
@@ -857,7 +858,6 @@ const styles = StyleSheet.create({
   playerAvatar: {
     fontSize: 40,
     lineHeight: 48,
-    marginRight: spacing.sm,
     textAlign: "center",
   },
   playerInfo: {
@@ -868,6 +868,11 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
+  },
+  playerNameSection: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   playerSection: {
     alignItems: "center",
@@ -889,8 +894,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   scoreText: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "500",
+    marginTop: spacing.xxs,
+    textAlign: "center",
   },
   timerBar: {
     borderRadius: 2,
