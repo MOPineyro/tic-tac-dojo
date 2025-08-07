@@ -35,10 +35,10 @@ import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
 export type AppStackParamList = {
   Welcome: undefined
   CharacterSelect: undefined
-  StageSelect: { selectedCharacter: string }
-  Game: { selectedCharacter: string; stage: any }
+  StageSelect: undefined
+  Game: { level: number; stage: any }
   Win: { score: number; timeUsed: number; winner: string }
-  Lose: { score: number; timeUsed: number; winner: string }
+  Lose: { score: number; timeUsed: number; winner: string; level?: number }
   Leaderboard: undefined
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST

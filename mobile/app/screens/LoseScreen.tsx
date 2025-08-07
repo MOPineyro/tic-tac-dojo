@@ -8,17 +8,18 @@ import Animated, {
   withSequence,
   withDelay,
 } from "react-native-reanimated"
+
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
-import { useAppTheme } from "@/theme/context"
 import { AppStackScreenProps } from "@/navigators/AppNavigator"
+import { useAppTheme } from "@/theme/context"
 import { spacing } from "@/theme/spacing"
 
 interface LoseScreenProps extends AppStackScreenProps<"Lose"> {}
 
 export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
   const { theme } = useAppTheme()
-  const { score = 0, timeUsed = 0, winner } = route.params
+  const { score = 0, timeUsed = 0, winner, level } = route.params
 
   // Calculate consolation score for good effort
   const consolationScore = Math.max(50, Math.floor(score * 0.3))
@@ -41,7 +42,7 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
         withTiming(10, { duration: 100 }),
         withTiming(-5, { duration: 100 }),
         withTiming(5, { duration: 100 }),
-        withTiming(0, { duration: 100 })
+        withTiming(0, { duration: 100 }),
       )
 
       // Grayscale transition effect (simulated with opacity)
@@ -80,19 +81,26 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
   }))
 
   const handleTryAgain = () => {
-    // Navigate back to game with same settings
-    navigation.navigate("Game", { 
-      selectedCharacter: "samurai", // This would come from previous state
-      stage: { id: "stage-1", name: "Classic Dojo", level: 1 } // Mock stage
-    })
+    // If we know the level, go directly to the game, otherwise go to stage select
+    if (level) {
+      navigation.navigate("Game", {
+        level: level,
+        stage: { level: level }, // Basic stage info
+      })
+    } else {
+      navigation.navigate("StageSelect")
+    }
   }
 
   const handleMainMenu = () => {
-    navigation.navigate("Welcome")
+    // Main menu is the stage select screen
+    navigation.navigate("StageSelect")
   }
 
   const getEncouragementMessage = () => {
-    if (timeUsed < 20) {
+    if (winner === "DRAW") {
+      return "It's a draw! You matched the AI's skill. Try to find the winning edge!"
+    } else if (timeUsed < 20) {
       return "You played fast! Try a more defensive strategy."
     } else if (movesAnalyzed > 12) {
       return "Good strategic thinking! You were close to victory."
@@ -102,7 +110,7 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
   }
 
   return (
-    <Screen 
+    <Screen
       preset="scroll"
       contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}
       safeAreaEdges={["top", "bottom"]}
@@ -111,16 +119,13 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
         {/* Result Section - 30% */}
         <View style={styles.resultSection}>
           <Animated.View style={resultAnimatedStyle}>
-            <Text
-              style={[styles.defeatText, { color: "#EF4444" }]}
-              preset="heading"
-            >
-              DEFEATED
+            <Text style={[styles.defeatText, { color: "#EF4444" }]} preset="heading">
+              {winner === "DRAW" ? "DRAW" : "DEFEATED"}
             </Text>
           </Animated.View>
-          
+
           <Animated.View style={heartAnimatedStyle}>
-            <Text style={styles.heartEmoji}>💔</Text>
+            <Text style={styles.heartEmoji}>{winner === "DRAW" ? "🤝" : "💔"}</Text>
           </Animated.View>
         </View>
 
@@ -128,36 +133,28 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
         <View style={styles.statsSection}>
           <View style={styles.statsContainer}>
             <View style={styles.statRow}>
-              <Text style={[styles.statLabel, { color: theme.colors.text }]}>
-                Score Earned:
-              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.text }]}>Score Earned:</Text>
               <Text style={[styles.statValue, { color: theme.colors.text }]}>
                 {consolationScore}
               </Text>
             </View>
-            
+
             <View style={styles.statRow}>
-              <Text style={[styles.statLabel, { color: theme.colors.text }]}>
-                Moves Played:
-              </Text>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {movesAnalyzed}
-              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.text }]}>Moves Played:</Text>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{movesAnalyzed}</Text>
             </View>
 
             <View style={styles.statRow}>
-              <Text style={[styles.statLabel, { color: theme.colors.text }]}>
-                Time Played:
-              </Text>
-              <Text style={[styles.statValue, { color: theme.colors.text }]}>
-                {timeUsed}s
-              </Text>
+              <Text style={[styles.statLabel, { color: theme.colors.text }]}>Time Played:</Text>
+              <Text style={[styles.statValue, { color: theme.colors.text }]}>{timeUsed}s</Text>
             </View>
           </View>
 
           <View style={styles.encouragementContainer}>
             <Text style={[styles.encouragementText, { color: "#F59E0B" }]}>
-              "The way of the warrior is found in death. Defeat teaches wisdom."
+              {winner === "DRAW"
+                ? "A draw is still a lesson. Victory requires decisive action."
+                : "The way of the warrior is found in death. Defeat teaches wisdom."}
             </Text>
             <Text style={[styles.hintText, { color: theme.colors.textDim }]}>
               {getEncouragementMessage()}
@@ -167,29 +164,22 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
 
         {/* Actions Section - 40% */}
         <Animated.View style={[styles.actionsSection, buttonAnimatedStyle]}>
-          <Pressable
-            style={styles.retryButton}
-            onPress={handleTryAgain}
-          >
+          <Pressable style={styles.retryButton} onPress={handleTryAgain}>
             <Text style={styles.retryButtonText}>TRY AGAIN</Text>
-            <Text style={styles.retrySubtext}>再挑戦</Text>
           </Pressable>
 
-          <Pressable
-            style={styles.menuButton}
-            onPress={handleMainMenu}
-          >
-            <Text style={styles.menuButtonText}>
-              MAIN MENU
-            </Text>
+          <Pressable style={styles.menuButton} onPress={handleMainMenu}>
+            <Text style={styles.menuButtonText}>MAIN MENU</Text>
           </Pressable>
 
+          {/* Leaderboard temporarily disabled
           <Pressable
             style={styles.leaderboardLink}
             onPress={() => navigation.navigate("Leaderboard")}
           >
             <Text style={styles.leaderboardText}>🏆 View Leaderboard</Text>
           </Pressable>
+          */}
 
           {/* Lives remaining indicator */}
           <View style={styles.livesContainer}>
@@ -204,6 +194,11 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
 }
 
 const styles = StyleSheet.create({
+  actionsSection: {
+    flex: 0.4,
+    gap: spacing.md,
+    justifyContent: "center",
+  },
   container: {
     minHeight: "100%",
     paddingHorizontal: spacing.lg,
@@ -211,46 +206,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  resultSection: {
-    flex: 0.3,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: spacing.xl,
-  },
   defeatText: {
     fontSize: 42,
     fontWeight: "bold",
-    textAlign: "center",
     marginBottom: spacing.lg,
+    textAlign: "center",
     textShadowColor: "rgba(239, 68, 68, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-  },
-  heartEmoji: {
-    fontSize: 64,
-    lineHeight: 76,
-    textAlign: "center",
-  },
-  statsSection: {
-    flex: 0.3,
-    justifyContent: "center",
-    paddingVertical: spacing.lg,
-  },
-  statsContainer: {
-    marginBottom: spacing.lg,
-  },
-  statRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: spacing.xs,
-  },
-  statLabel: {
-    fontSize: 16,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "600",
   },
   encouragementContainer: {
     alignItems: "center",
@@ -259,19 +222,71 @@ const styles = StyleSheet.create({
   encouragementText: {
     fontSize: 16,
     fontStyle: "italic",
-    textAlign: "center",
-    marginBottom: spacing.sm,
     fontWeight: "600",
+    marginBottom: spacing.sm,
+    textAlign: "center",
+  },
+  heartEmoji: {
+    fontSize: 64,
+    lineHeight: 76,
+    textAlign: "center",
   },
   hintText: {
     fontSize: 14,
-    textAlign: "center",
     lineHeight: 20,
+    textAlign: "center",
   },
-  actionsSection: {
-    flex: 0.4,
+  leaderboardLink: {
+    alignItems: "center",
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  leaderboardText: {
+    color: "#00AA44",
+    fontSize: 14,
+    fontWeight: "500",
+    opacity: 0.8,
+  },
+  livesContainer: {
+    alignItems: "center",
+    marginTop: spacing.sm,
+  },
+  livesText: {
+    fontSize: 14,
+  },
+  menuButton: {
+    alignItems: "center",
+    backgroundColor: "transparent", // No background for outline style
+    borderColor: "#00AA44", // Green outline
+    borderRadius: 8,
+    borderWidth: 2,
+    elevation: 2, // Minimal elevation
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    // Subtle shadow for outline button
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  menuButtonText: {
+    color: "#00FF88", // Green text to match outline
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+    textShadowColor: "#000000", // Black shadow for readability
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  resultSection: {
+    alignItems: "center",
+    flex: 0.3,
     justifyContent: "center",
-    gap: spacing.md,
+    paddingTop: spacing.xl,
   },
   retryButton: {
     alignItems: "center",
@@ -316,50 +331,25 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
   },
-  menuButton: {
-    alignItems: "center",
-    backgroundColor: "transparent", // No background for outline style
-    borderColor: "#00AA44", // Green outline
-    borderRadius: 8,
-    borderWidth: 2,
-    elevation: 2, // Minimal elevation
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    // Subtle shadow for outline button
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  menuButtonText: {
-    color: "#00FF88", // Green text to match outline
+  statLabel: {
     fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-    textShadowColor: "#000000", // Black shadow for readability
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
   },
-  livesContainer: {
+  statRow: {
     alignItems: "center",
-    marginTop: spacing.sm,
-  },
-  livesText: {
-    fontSize: 14,
-  },
-  leaderboardLink: {
-    alignItems: "center",
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: spacing.xs,
   },
-  leaderboardText: {
-    color: "#00AA44",
-    fontSize: 14,
-    fontWeight: "500",
-    opacity: 0.8,
+  statValue: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  statsContainer: {
+    marginBottom: spacing.lg,
+  },
+  statsSection: {
+    flex: 0.3,
+    justifyContent: "center",
+    paddingVertical: spacing.lg,
   },
 })

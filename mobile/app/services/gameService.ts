@@ -4,6 +4,8 @@
  * This service wraps the low-level API calls and provides a cleaner interface
  * for the UI components to interact with the game backend.
  */
+import { load, save, remove } from "@/utils/storage"
+
 import { api } from "./api"
 import type {
   Player,
@@ -14,6 +16,12 @@ import type {
   PlayerUpdate,
   RankingEntry,
 } from "./api/types"
+
+// Storage keys
+const STORAGE_KEYS = {
+  SESSION: "tic-tac-dojo-session",
+  PLAYER_ID: "tic-tac-dojo-player-id",
+}
 
 // Enhanced types for UI consumption
 export interface GameSession {
@@ -61,17 +69,54 @@ export class GameService {
    */
   async initializeSession(deviceId?: string): Promise<GameSession | null> {
     try {
-      const result = await api.createSession({ deviceId })
+      // Check if we already have a session in memory
+      if (this.currentSession) {
+        console.log("Using existing session:", this.currentSession.playerId)
+        return this.currentSession
+      }
 
-      if (result.kind === "ok") {
+      // Try to load session from storage
+      const savedPlayerId = await load(STORAGE_KEYS.PLAYER_ID)
+      if (savedPlayerId) {
+        console.log("Found saved player ID:", savedPlayerId)
+        // Restore session with saved player ID
         this.currentSession = {
-          playerId: result.data.playerId,
-          playerData: result.data.playerData,
+          playerId: savedPlayerId as string,
+          playerData: undefined, // Will be loaded when needed
         }
         return this.currentSession
       }
 
-      console.error("Failed to create session:", result)
+      // No existing session, create a new one
+      console.log("Creating new session with deviceId:", deviceId)
+
+      const result = await api.createSession({ deviceId })
+
+      console.log("Session creation result:", result)
+
+      if (result.kind === "ok") {
+        this.currentSession = {
+          playerId: result.data.session.playerId,
+          playerData: {
+            id: result.data.session.playerId,
+            playType: result.data.session.isAnonymous ? "anonymous" : "registered",
+            currentLevel: 1, // Default level for new players
+            levelProgress: [],
+            totalScore: 0,
+            achievements: [],
+            createdAt: result.data.session.createdAt,
+            lastPlayed: result.data.session.createdAt,
+          },
+        }
+
+        // Save player ID for future sessions
+        await save(STORAGE_KEYS.PLAYER_ID, result.data.session.playerId)
+
+        console.log("Session created successfully:", this.currentSession)
+        return this.currentSession
+      }
+
+      console.error("Failed to create session:", JSON.stringify(result, null, 2))
       return null
     } catch (error) {
       console.error("Session initialization error:", error)
@@ -89,8 +134,9 @@ export class GameService {
   /**
    * Clear current session
    */
-  clearSession(): void {
+  async clearSession(): Promise<void> {
     this.currentSession = null
+    await remove(STORAGE_KEYS.PLAYER_ID)
   }
 
   // ============================================================================
@@ -107,10 +153,17 @@ export class GameService {
     }
 
     try {
+      console.log("Creating game with params:", {
+        playerId: this.currentSession.playerId,
+        level,
+      })
+
       const result = await api.createGame({
         playerId: this.currentSession.playerId,
         level,
       })
+
+      console.log("Game creation result:", result)
 
       if (result.kind === "ok") {
         const gameState = result.data.gameData
@@ -119,7 +172,41 @@ export class GameService {
         return gameState
       }
 
-      console.error("Failed to create game:", result)
+      console.error("Failed to create game:", JSON.stringify(result, null, 2))
+      return null
+    } catch (error) {
+      console.error("Game creation error:", error)
+      return null
+    }
+  }
+
+  /**
+   * Create a new game and return full details including level info
+   */
+  async createGameWithDetails(level: number = 1): Promise<any | null> {
+    if (!this.currentSession) {
+      console.error("No active session")
+      return null
+    }
+
+    try {
+      const result = await api.createGame({
+        playerId: this.currentSession.playerId,
+        level,
+      })
+
+      if (result.kind === "ok") {
+        const gameState = result.data.gameData
+        this.currentSession.gameId = result.data.gameId
+        this.currentSession.currentGame = gameState
+        return {
+          gameData: gameState,
+          levelInfo: result.data.levelInfo,
+          timer: result.data.timer,
+        }
+      }
+
+      console.error("Failed to create game:", JSON.stringify(result, null, 2))
       return null
     } catch (error) {
       console.error("Game creation error:", error)
@@ -129,6 +216,7 @@ export class GameService {
 
   /**
    * Make a move in the current game
+   * Returns the game state if successful, or throws an error with timeout info
    */
   async makeMove(position: number): Promise<StandardGameState | null> {
     if (!this.currentSession?.gameId || !this.currentSession.currentGame) {
@@ -174,14 +262,14 @@ export class GameService {
         finalGrid: this.currentSession.currentGame.grid,
       })
 
-      if (result.kind === "ok") {
+      if (result.kind === "ok" && result.data.success) {
         const gameResult: GameResult = {
-          winner: this.currentSession.currentGame.winner || null,
-          finalScore: result.data.finalScore,
-          scoreBreakdown: result.data.scoreBreakdown,
-          gameAnalysis: result.data.gameAnalysis,
-          playerUpdate: result.data.playerUpdate,
-          levelUp: result.data.levelUp,
+          winner: result.data.result.winner || null,
+          finalScore: result.data.result.score,
+          scoreBreakdown: result.data.result.scoreBreakdown,
+          gameAnalysis: result.data.result.gameAnalysis,
+          playerUpdate: result.data.player,
+          levelUp: result.data.result.levelUp,
         }
 
         // Clear current game
@@ -221,13 +309,11 @@ export class GameService {
 
     try {
       const result = await api.getPlayerProgress(this.currentSession.playerId)
+      console.log("Raw player progress API response:", result)
 
-      if (result.kind === "ok") {
-        return {
-          playerData: result.data.playerData,
-          levelDetails: result.data.levelDetails,
-          statistics: result.data.statistics,
-        }
+      if (result.kind === "ok" && result.data.success) {
+        // Return the actual API response structure
+        return result.data
       }
 
       console.error("Failed to get player progress:", result)
@@ -275,34 +361,6 @@ export class GameService {
     }
 
     return levels
-  }
-
-  /**
-   * Unlock level with code
-   */
-  async unlockLevel(targetLevel: number, unlockCode: string): Promise<boolean> {
-    if (!this.currentSession) {
-      console.error("No active session")
-      return false
-    }
-
-    try {
-      const result = await api.unlockLevel({
-        playerId: this.currentSession.playerId,
-        targetLevel,
-        unlockCode,
-      })
-
-      if (result.kind === "ok") {
-        return true
-      }
-
-      console.error("Failed to unlock level:", result)
-      return false
-    } catch (error) {
-      console.error("Level unlock error:", error)
-      return false
-    }
   }
 
   // ============================================================================
@@ -359,6 +417,35 @@ export class GameService {
    */
   isValidMove(grid: Grid, position: number): boolean {
     return position >= 0 && position < 9 && grid[position] === null
+  }
+
+  /**
+   * Unlock level with code
+   */
+  async unlockLevel(level: number, unlockCode: string): Promise<any | null> {
+    if (!this.currentSession) {
+      console.error("No active session")
+      return null
+    }
+
+    try {
+      const result = await api.unlockLevel({
+        playerId: this.currentSession.playerId,
+        targetLevel: level,
+        unlockCode: unlockCode,
+      })
+
+      if (result.kind === "ok") {
+        console.log("Level unlock successful:", result.data)
+        return result.data
+      }
+
+      console.error("Failed to unlock level:", JSON.stringify(result, null, 2))
+      return null
+    } catch (error) {
+      console.error("Level unlock error:", error)
+      return null
+    }
   }
 
   /**

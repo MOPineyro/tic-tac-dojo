@@ -54,12 +54,17 @@ export interface LevelUnlockRequest {
 // Response Types
 export interface SessionResponse {
   success: boolean
-  playerId: string
-  playerData: PlayerData
+  session: {
+    playerId: string
+    playerName: string
+    isAnonymous: boolean
+    createdAt: string
+  }
 }
 
 export interface GameCreationResponse {
   success: boolean
+  gameId: string
   gameData: StandardGameState
   timer: TimerConfig
   levelInfo: LevelInfo
@@ -70,6 +75,8 @@ export interface GameMoveResponse {
   gameState: StandardGameState
   moveResult: MoveResult
   aiMove?: AIMoveResult
+  timeUp?: boolean
+  error?: string
 }
 
 export interface GameStateResponse {
@@ -79,11 +86,21 @@ export interface GameStateResponse {
 
 export interface GameCompletionResponse {
   success: boolean
-  finalScore: number
-  scoreBreakdown: ScoreBreakdown
-  gameAnalysis: GameAnalysis
-  playerUpdate: PlayerUpdate
-  levelUp: boolean
+  result: {
+    won: boolean
+    winner: Player | "DRAW" | null
+    score: number
+    scoreBreakdown: ScoreBreakdown
+    gameAnalysis: GameAnalysis
+    isTimeoutLoss: boolean
+    levelCompleted: boolean
+    levelUp: boolean
+    gameCompleted: boolean
+  }
+  player: PlayerUpdate
+  currentLevel: any
+  nextLevel?: any
+  completionMessage?: string
 }
 
 export interface PlayerProgressResponse {

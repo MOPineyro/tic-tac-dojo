@@ -1,5 +1,5 @@
-import { useEffect } from "react"
-import { StyleSheet, View, Pressable } from "react-native"
+import { useEffect, useState } from "react"
+import { StyleSheet, View, Pressable, Alert } from "react-native"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,6 +11,7 @@ import Animated, {
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { AppStackScreenProps } from "@/navigators/AppNavigator"
+import { ApiTester } from "@/services/apiTest"
 import { useAppTheme } from "@/theme/context"
 import { spacing } from "@/theme/spacing"
 
@@ -18,6 +19,7 @@ interface WelcomeScreenProps extends AppStackScreenProps<"Welcome"> {}
 
 export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
   const { theme } = useAppTheme()
+  const [testingApi, setTestingApi] = useState(false)
 
   // Animation values
   const logoOpacity = useSharedValue(0)
@@ -74,7 +76,38 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
   }))
 
   const handleEnterDojo = () => {
-    navigation.navigate("CharacterSelect")
+    navigation.navigate("StageSelect")
+  }
+
+  const handleTestApi = async () => {
+    setTestingApi(true)
+
+    try {
+      const { overall, results } = await ApiTester.runFullTest()
+
+      if (overall) {
+        Alert.alert(
+          "🎉 API Test Success!",
+          "All backend endpoints are working correctly. The game is ready to play!",
+          [{ text: "Awesome!", style: "default" }],
+        )
+      } else {
+        const failedTests = Object.entries(results)
+          .filter(([_, result]) => !result.success)
+          .map(([test, result]) => `${test}: ${result.message}`)
+          .join("\n")
+
+        Alert.alert("⚠️ API Test Issues", `Some tests failed:\n\n${failedTests}`, [
+          { text: "OK", style: "default" },
+        ])
+      }
+    } catch (error) {
+      Alert.alert("❌ API Test Error", `Failed to run API tests: ${error}`, [
+        { text: "OK", style: "default" },
+      ])
+    } finally {
+      setTestingApi(false)
+    }
   }
 
   return (
@@ -156,8 +189,24 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
             onPress={handleEnterDojo}
           >
             <Text style={styles.enterButtonText}>ENTER THE DOJO</Text>
-            <Text style={styles.enterButtonSubtext}>道場に入る</Text>
           </Pressable>
+
+          {/* API Test Button */}
+          {/* <Pressable
+            style={({ pressed }) => [
+              styles.testButton,
+              {
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+                opacity: testingApi ? 0.5 : 1,
+              },
+            ]}
+            onPress={handleTestApi}
+            disabled={testingApi}
+          >
+            <Text style={styles.testButtonText}>
+              {testingApi ? "🧪 Testing..." : "🧪 Test API"}
+            </Text>
+          </Pressable> */}
         </Animated.View>
       </View>
 
@@ -331,6 +380,29 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: spacing.xl,
     textAlign: "center",
+  },
+  testButton: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    borderColor: "#00AA44",
+    borderRadius: 8,
+    borderWidth: 1,
+    elevation: 2,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  testButtonText: {
+    color: "#00FF88",
+    fontSize: 14,
+    fontWeight: "600",
+    textShadowColor: "#000000",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   titleSection: {
     alignItems: "center",

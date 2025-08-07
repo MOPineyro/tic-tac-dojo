@@ -91,11 +91,6 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
     transform: [{ scale: starsScale.value }],
   }))
 
-  const scoreAnimatedStyle = useAnimatedStyle(() => ({
-    // Using interpolate for count up effect would be more complex
-    // For now, we'll use a simpler approach
-  }))
-
   const buttonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: buttonTranslateY.value }],
     opacity: buttonOpacity.value,
@@ -103,11 +98,7 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
 
   const handleContinue = () => {
     // Reset animations and navigate
-    navigation.navigate("StageSelect", { selectedCharacter: "samurai" })
-  }
-
-  const handleMainMenu = () => {
-    navigation.navigate("Welcome")
+    navigation.navigate("StageSelect")
   }
 
   const renderStars = () => {
@@ -194,16 +185,14 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
           <Text style={styles.continueButtonText}>CONTINUE</Text>
         </Pressable>
 
-        <Pressable style={styles.menuButton} onPress={handleMainMenu}>
-          <Text style={styles.menuButtonText}>MAIN MENU</Text>
-        </Pressable>
-
+        {/* Leaderboard temporarily disabled
         <Pressable
           style={styles.leaderboardLink}
           onPress={() => navigation.navigate("Leaderboard")}
         >
           <Text style={styles.leaderboardText}>🏆 View Leaderboard</Text>
         </Pressable>
+        */}
       </Animated.View>
     </Screen>
   )

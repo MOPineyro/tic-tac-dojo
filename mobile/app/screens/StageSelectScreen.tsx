@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react"
-import { StyleSheet, Pressable, View } from "react-native"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { StyleSheet, Pressable, View, Modal, TextInput, Alert } from "react-native"
+import { useFocusEffect } from "@react-navigation/native"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,6 +12,7 @@ import Animated, {
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { AppStackScreenProps } from "@/navigators/AppNavigator"
+import { gameService } from "@/services/gameService"
 import { useAppTheme } from "@/theme/context"
 import { spacing } from "@/theme/spacing"
 
@@ -62,7 +64,7 @@ const stages: Stage[] = [
   {
     id: "stage-4",
     name: "Neural Networks",
-    gridSize: 3,
+    gridSize: 4,
     background: "#FFD600", // Electric Yellow
     unlocked: false,
     completed: false,
@@ -72,7 +74,7 @@ const stages: Stage[] = [
   {
     id: "stage-5",
     name: "Master's Sanctum",
-    gridSize: 3,
+    gridSize: 4,
     background: "#FF0055", // Neon Red
     unlocked: false,
     completed: false,
@@ -81,34 +83,134 @@ const stages: Stage[] = [
   },
 ]
 
-// Mock player stats
-const mockPlayerStats = {
-  points: 2450,
-  lives: 3,
-  currentStage: 0,
-}
-
-export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps) => {
+export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
   const { theme } = useAppTheme()
-  const { selectedCharacter } = route.params
   const [currentStageIndex, setCurrentStageIndex] = useState(0)
+  const [playerProgress, setPlayerProgress] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Level unlock functionality
+  const [showUnlockModal, setShowUnlockModal] = useState(false)
+  const [unlockCode, setUnlockCode] = useState("")
+  const [unlockingLevel, setUnlockingLevel] = useState<number | null>(null)
+  const [unlockLoading, setUnlockLoading] = useState(false)
+  const clickCountRef = useRef<{ [key: number]: number }>({})
+  const clickTimeoutRef = useRef<{ [key: number]: NodeJS.Timeout }>({})
 
   const rotationValue = useSharedValue(0)
   const scaleValue = useSharedValue(1)
 
   useEffect(() => {
     // Subtle rotation animation for stage preview
-    rotationValue.value = withRepeat(withTiming(5, { duration: 3000 }), -1, true)
-  }, [rotationValue])
+    // Use requestAnimationFrame to avoid Reanimated warnings
+    requestAnimationFrame(() => {
+      rotationValue.value = withRepeat(withTiming(5, { duration: 3000 }), -1, true)
+    })
 
-  const previewAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationValue.value}deg` }, { scale: scaleValue.value }],
-  }))
+    // Cleanup function
+    return () => {
+      // Clear any pending timeouts
+      Object.values(clickTimeoutRef.current).forEach(clearTimeout)
+    }
+  }, []) // Empty dependency array - only run once on mount
 
-  const currentStage = stages[currentStageIndex]
+  // Load player progress whenever screen comes into focus
+  const loadPlayerProgress = useCallback(async () => {
+    try {
+      setLoading(true)
+      // Ensure we have a session
+      const session = await gameService.initializeSession()
+      if (session) {
+        const progress = await gameService.getPlayerProgress()
+        setPlayerProgress(progress)
+        console.log("Player progress loaded:", progress)
+
+        // Auto-select the current level or highest unlocked level
+        if (progress?.player?.currentLevel) {
+          const levelIndex = Math.min(
+            progress.player.currentLevel - 1, // currentLevel is 1-based, index is 0-based
+            stages.length - 1,
+          )
+          setCurrentStageIndex(Math.max(0, levelIndex))
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load player progress:", error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPlayerProgress()
+    }, [loadPlayerProgress]),
+  )
+
+  const previewAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${rotationValue.value}deg` }, { scale: scaleValue.value }],
+    }
+  })
+
+  // Update stages with real player progress
+  const getStagesWithProgress = () => {
+    if (!playerProgress?.allLevels) return stages
+
+    return stages.map((stage, index) => {
+      const serverLevel = playerProgress.allLevels.find((l: any) => l.level === stage.level)
+      return {
+        ...stage,
+        unlocked: serverLevel?.isUnlocked ?? false,
+        completed: serverLevel?.progress?.completed ?? false,
+      }
+    })
+  }
+
+  const stagesWithProgress = getStagesWithProgress()
+  const currentStage = stagesWithProgress[currentStageIndex]
+
+  if (loading) {
+    return (
+      <Screen preset="fixed" safeAreaEdges={["top", "bottom"]}>
+        <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+          <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+            Loading your progress...
+          </Text>
+        </View>
+      </Screen>
+    )
+  }
 
   const handleStageSelect = () => {
-    if (!currentStage.unlocked) return
+    const currentLevel = currentStage.level
+
+    if (!currentStage.unlocked) {
+      // Track clicks for locked stages
+      if (!clickCountRef.current[currentLevel]) {
+        clickCountRef.current[currentLevel] = 0
+      }
+
+      clickCountRef.current[currentLevel]++
+
+      // Clear any existing timeout for this level
+      if (clickTimeoutRef.current[currentLevel]) {
+        clearTimeout(clickTimeoutRef.current[currentLevel])
+      }
+
+      // Reset click count after 2 seconds of inactivity
+      clickTimeoutRef.current[currentLevel] = setTimeout(() => {
+        clickCountRef.current[currentLevel] = 0
+      }, 2000)
+
+      // Show unlock modal after 3 clicks
+      if (clickCountRef.current[currentLevel] >= 3) {
+        setUnlockingLevel(currentLevel)
+        setShowUnlockModal(true)
+        clickCountRef.current[currentLevel] = 0 // Reset count
+      }
+      return
+    }
 
     scaleValue.value = withSpring(0.95, {}, () => {
       scaleValue.value = withSpring(1)
@@ -116,7 +218,7 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
 
     setTimeout(() => {
       navigation.navigate("Game", {
-        selectedCharacter,
+        level: currentStage.level,
         stage: currentStage,
       })
     }, 300)
@@ -125,9 +227,49 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
   const navigateStage = (direction: "prev" | "next") => {
     if (direction === "prev" && currentStageIndex > 0) {
       setCurrentStageIndex(currentStageIndex - 1)
-    } else if (direction === "next" && currentStageIndex < stages.length - 1) {
+    } else if (direction === "next" && currentStageIndex < stagesWithProgress.length - 1) {
       setCurrentStageIndex(currentStageIndex + 1)
     }
+  }
+
+  const handleUnlockAttempt = async () => {
+    if (!unlockingLevel || !unlockCode.trim()) {
+      Alert.alert("Error", "Please enter an unlock code")
+      return
+    }
+
+    setUnlockLoading(true)
+    try {
+      const result = await gameService.unlockLevel(unlockingLevel, unlockCode.trim())
+
+      if (result) {
+        Alert.alert("Success!", result.message || `Level ${unlockingLevel} unlocked!`, [
+          {
+            text: "OK",
+            onPress: () => {
+              setShowUnlockModal(false)
+              setUnlockCode("")
+              setUnlockingLevel(null)
+              // Refresh player progress to show newly unlocked level
+              loadPlayerProgress()
+            },
+          },
+        ])
+      } else {
+        Alert.alert("Failed", "Invalid unlock code or unable to unlock level")
+      }
+    } catch (error) {
+      console.error("Unlock error:", error)
+      Alert.alert("Error", "Failed to unlock level. Please try again.")
+    } finally {
+      setUnlockLoading(false)
+    }
+  }
+
+  const handleCloseUnlockModal = () => {
+    setShowUnlockModal(false)
+    setUnlockCode("")
+    setUnlockingLevel(null)
   }
 
   const ProgressDiamond = ({ filled }: { filled: boolean }) => (
@@ -171,21 +313,26 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
             },
           ]}
         >
-          {/* 3x3 Grid Preview */}
-          <View style={styles.gridContainer}>
-            {Array.from({ length: 9 }).map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.gridCell,
-                  {
-                    backgroundColor: currentStage.background,
-                    borderColor: getBorderColor(currentStage.background),
-                    borderWidth: 2,
-                  },
-                ]}
-              />
-            ))}
+          {/* Dynamic Grid Preview */}
+          <View
+            style={[styles.gridContainer, currentStage.gridSize === 4 && styles.gridContainer4x4]}
+          >
+            {Array.from({ length: currentStage.gridSize * currentStage.gridSize }).map(
+              (_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.gridCell,
+                    currentStage.gridSize === 4 && styles.gridCell4x4,
+                    {
+                      backgroundColor: currentStage.background,
+                      borderColor: getBorderColor(currentStage.background),
+                      borderWidth: 2,
+                    },
+                  ]}
+                />
+              ),
+            )}
           </View>
         </View>
       </Animated.View>
@@ -203,20 +350,24 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
         <Text style={[styles.headerText, { color: theme.colors.text }]} preset="heading">
           Select Stage
         </Text>
+        {/* Leaderboard temporarily disabled
         <Pressable
           style={styles.leaderboardLink}
           onPress={() => navigation.navigate("Leaderboard")}
         >
           <Text style={styles.leaderboardText}>🏆 Leaderboard</Text>
         </Pressable>
+        */}
       </View>
 
       {/* Stats Bar */}
       <View style={[styles.statsBar, { backgroundColor: theme.colors.surface }]}>
         <Text style={[styles.statsText, { color: theme.colors.text }]}>
-          Points: {mockPlayerStats.points.toLocaleString()}
+          Points: {(playerProgress?.player?.totalScore || 0).toLocaleString()}
         </Text>
-        <Text style={[styles.statsText, { color: "#FF0055" }]}>⚔️ {mockPlayerStats.lives}</Text>
+        <Text style={[styles.statsText, { color: theme.colors.text }]}>
+          Level: {playerProgress?.player?.currentLevel || 1}
+        </Text>
       </View>
 
       {/* Main Stage Preview */}
@@ -232,11 +383,45 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
             {currentStage.description}
           </Text>
 
-          <View style={styles.lockedTextContainer}>
+          <View style={styles.statusContainer}>
             {!currentStage.unlocked && (
-              <Text style={[styles.lockedText, { color: "#FF006E" }]}>
+              <Text style={[styles.statusText, { color: "#FF006E" }]}>
                 🔒 Complete previous stage to unlock
               </Text>
+            )}
+            {(currentStage.unlocked || currentStage.completed) && playerProgress?.allLevels && (
+              <>
+                {(() => {
+                  const serverLevel = playerProgress.allLevels.find(
+                    (l: any) => l.level === currentStage.level,
+                  )
+                  if (!serverLevel) return null
+
+                  if (currentStage.completed) {
+                    return (
+                      <Text style={[styles.statusText, { color: theme.colors.success }]}>
+                        ✓ Stage Completed
+                      </Text>
+                    )
+                  }
+
+                  const wins = serverLevel.progress?.wins || 0
+                  const requiredWins = serverLevel.requiredWins || 1
+                  const losses = serverLevel.progress?.losses || 0
+
+                  // Single line format: "Progress: 2/3 wins (need 1 more) | W:2 L:1"
+                  const remaining = requiredWins - wins
+                  const needText = remaining > 0 ? ` (need ${remaining} more)` : ""
+                  const recordText = losses > 0 ? ` | W:${wins} L:${losses}` : ""
+
+                  return (
+                    <Text style={[styles.statusText, { color: theme.colors.text }]}>
+                      Progress: {wins}/{requiredWins} wins{needText}
+                      {recordText}
+                    </Text>
+                  )
+                })()}
+              </>
             )}
           </View>
         </View>
@@ -265,7 +450,6 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
               },
             ]}
             onPress={handleStageSelect}
-            disabled={!currentStage.unlocked}
           >
             <Text style={styles.selectButtonText}>
               {currentStage.unlocked ? "ENTER DOJO" : "LOCKED"}
@@ -277,12 +461,14 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
               styles.navButton,
               {
                 backgroundColor:
-                  currentStageIndex < stages.length - 1 ? theme.colors.tint : theme.colors.border,
-                opacity: currentStageIndex < stages.length - 1 ? 1 : 0.5,
+                  currentStageIndex < stagesWithProgress.length - 1
+                    ? theme.colors.tint
+                    : theme.colors.border,
+                opacity: currentStageIndex < stagesWithProgress.length - 1 ? 1 : 0.5,
               },
             ]}
             onPress={() => navigateStage("next")}
-            disabled={currentStageIndex === stages.length - 1}
+            disabled={currentStageIndex === stagesWithProgress.length - 1}
           >
             <Text style={styles.navButtonText}>→</Text>
           </Pressable>
@@ -292,13 +478,13 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
       {/* Progress Section */}
       <View style={styles.progressSection}>
         <Text style={[styles.progressLabel, { color: theme.colors.text }]}>
-          Stage {currentStage.level} of {stages.length}: {currentStage.name}
+          Stage {currentStage.level} of {stagesWithProgress.length}: {currentStage.name}
         </Text>
 
         <View style={styles.progressRow}>
-          {stages.map((stage, index) => (
+          {stagesWithProgress.map((stage, index) => (
             <View key={stage.id} style={styles.progressItem}>
-              <ProgressDiamond filled={index <= currentStageIndex && stage.unlocked} />
+              <ProgressDiamond filled={stage.unlocked} />
               {index === currentStageIndex && (
                 <View
                   style={[styles.currentIndicator, { backgroundColor: currentStage.background }]}
@@ -309,9 +495,74 @@ export const StageSelectScreen = ({ navigation, route }: StageSelectScreenProps)
         </View>
 
         <Text style={[styles.progressSubtext, { color: theme.colors.textDim }]}>
-          {stages.filter((stage) => stage.unlocked).length} / {stages.length} stages accessible
+          {stagesWithProgress.filter((stage) => stage.unlocked).length} /{" "}
+          {stagesWithProgress.length} stages accessible
         </Text>
       </View>
+
+      {/* Level Unlock Modal */}
+      <Modal
+        visible={showUnlockModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={handleCloseUnlockModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={handleCloseUnlockModal}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]} preset="heading">
+              Unlock Level {unlockingLevel}
+            </Text>
+            <Text style={[styles.modalDescription, { color: theme.colors.textDim }]}>
+              Enter a special unlock code to access this level. These codes can be found through
+              challenges, easter eggs, or admin access.
+            </Text>
+
+            <TextInput
+              style={[
+                styles.codeInput,
+                {
+                  backgroundColor: theme.colors.background,
+                  color: theme.colors.text,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+              value={unlockCode}
+              onChangeText={setUnlockCode}
+              placeholder="Enter unlock code..."
+              placeholderTextColor={theme.colors.textDim}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!unlockLoading}
+            />
+
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[styles.modalButton, { backgroundColor: theme.colors.border }]}
+                onPress={handleCloseUnlockModal}
+                disabled={unlockLoading}
+              >
+                <Text style={[styles.modalButtonText, { color: theme.colors.text }]}>Cancel</Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.modalButton,
+                  {
+                    backgroundColor: theme.colors.tint,
+                    opacity: unlockLoading ? 0.6 : 1,
+                  },
+                ]}
+                onPress={handleUnlockAttempt}
+                disabled={unlockLoading || !unlockCode.trim()}
+              >
+                <Text style={[styles.modalButtonText, { color: "#FFFFFF" }]}>
+                  {unlockLoading ? "Unlocking..." : "Unlock"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </Screen>
   )
 }
@@ -329,17 +580,21 @@ const styles = StyleSheet.create({
     width: 6,
   },
   gridCell: {
-    borderRadius: 6,
-    elevation: 3,
-    height: "30%",
+    borderRadius: 4,
+    elevation: 2,
+    height: "28%",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    width: "30%",
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    width: "28%",
+  },
+  gridCell4x4: {
+    height: "20%",
+    width: "20%",
   },
   gridContainer: {
     alignContent: "space-between",
@@ -347,6 +602,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+  },
+  gridContainer4x4: {
+    gap: 2,
   },
   gridPreview: {
     marginBottom: spacing.xl,
@@ -371,16 +629,33 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     opacity: 0.8,
   },
-  lockedText: {
+  statusContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.sm,
+    minHeight: 40, // Fixed height to prevent button shift
+  },
+  statusText: {
     fontSize: 12,
     fontWeight: "600",
     textAlign: "center",
   },
-  lockedTextContainer: {
+  progressInfo: {
     alignItems: "center",
-    height: 24,
-    justifyContent: "center",
     marginTop: spacing.sm,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: spacing.xs,
+  },
+  progressSubtext: {
+    fontSize: 14,
+    marginTop: spacing.xxs,
+  },
+  completedText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
   mainSection: {
     alignItems: "center",
@@ -412,15 +687,15 @@ const styles = StyleSheet.create({
   previewContainer: {
     borderRadius: 12,
     elevation: 8,
-    height: 160,
-    padding: spacing.md,
+    height: 140,
+    padding: spacing.sm,
     shadowOffset: {
       width: 0,
       height: 4,
     },
     shadowOpacity: 0.5,
     shadowRadius: 8,
-    width: 160,
+    width: 140,
   },
   progressDiamond: {
     borderRadius: 2,
@@ -445,10 +720,6 @@ const styles = StyleSheet.create({
   progressSection: {
     alignItems: "center",
     paddingBottom: spacing.xl,
-  },
-  progressSubtext: {
-    fontSize: 12,
-    marginTop: spacing.xs,
   },
   selectButton: {
     alignItems: "center",
@@ -509,6 +780,66 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   statsText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  loadingText: {
+    fontSize: 18,
+    textAlign: "center",
+  },
+  // Modal styles
+  modalOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    flex: 1,
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  modalContent: {
+    borderRadius: 12,
+    elevation: 10,
+    maxWidth: 400,
+    padding: spacing.xl,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    width: "100%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: spacing.md,
+    textAlign: "center",
+  },
+  modalDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: spacing.lg,
+    textAlign: "center",
+  },
+  codeInput: {
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: spacing.md,
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+    fontFamily: "monospace", // Monospace font for codes
+    letterSpacing: 2,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+  },
+  modalButton: {
+    alignItems: "center",
+    borderRadius: 8,
+    flex: 1,
+    paddingVertical: spacing.md,
+  },
+  modalButtonText: {
     fontSize: 16,
     fontWeight: "600",
   },

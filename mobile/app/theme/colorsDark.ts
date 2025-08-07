@@ -42,9 +42,16 @@ export const colors = {
   textDim: palette.neutral600,
   background: palette.neutral200,
   border: palette.neutral400,
+  surface: palette.neutral100, // Light surface for dark theme
   tint: palette.primary500,
   tintInactive: palette.neutral300,
   separator: palette.neutral300,
   error: palette.angry500,
   errorBackground: palette.angry100,
+  // Game-specific colors for dark theme
+  playerX: palette.secondary300, // Lighter blue for dark theme
+  playerO: palette.primary400,   // Lighter red for dark theme
+  success: palette.accent200,    // Success states
+  warning: palette.accent100,    // Warning states
+  gold: palette.accent100,       // Premium/achievements
 } as const
