@@ -9,6 +9,26 @@ const palette = {
   neutral200: "#191015",
   neutral100: "#000000",
 
+  // Neon Cyber Colors (adapted for dark theme visibility)
+  neonRed: "#FF4477",     // Primary action/Player O (slightly brighter)
+  neonCyan: "#44DDFF",    // Secondary action/Player X (slightly brighter)
+  neonPurple: "#AA77FF",  // Special effects/power (slightly brighter)
+  neonPink: "#FF4488",    // Warnings/critical (slightly brighter)
+  electricYellow: "#FFDD44", // Points/achievements (slightly toned)
+
+  // Traditional Samurai Elements (adapted for dark theme)
+  bloodOrange: "#FF5555", // Victory/samurai accent (brighter)
+  cherryBlossom: "#FFCCDD", // Soft highlights (lighter)
+  jadeGreen: "#44FFAA",   // Success states (brighter)
+  goldFoil: "#FFDD44",    // Premium/legendary (toned)
+
+  // Additional Game Colors (adapted for dark theme)
+  richGreen: "#44CC66",   // Rich green base for buttons (brighter)
+  darkGreen: "#228844",   // Dark green shadow (brighter)
+  lightGreen: "#CCFFCC",  // Light green tint
+  amber: "#FFBB44",       // Orange/amber for highlights (brighter)
+  dangerRed: "#FF6666",   // Red for errors/danger (brighter)
+
   primary600: "#F4E0D9",
   primary500: "#E8C1B4",
   primary400: "#DDA28E",
@@ -33,6 +53,7 @@ const palette = {
 
   overlay20: "rgba(25, 16, 21, 0.2)",
   overlay50: "rgba(25, 16, 21, 0.5)",
+  overlay80: "rgba(25, 16, 21, 0.8)",
 } as const
 
 export const colors = {
@@ -49,9 +70,14 @@ export const colors = {
   error: palette.angry500,
   errorBackground: palette.angry100,
   // Game-specific colors for dark theme
-  playerX: palette.secondary300, // Lighter blue for dark theme
-  playerO: palette.primary400,   // Lighter red for dark theme
-  success: palette.accent200,    // Success states
-  warning: palette.accent100,    // Warning states
-  gold: palette.accent100,       // Premium/achievements
+  playerX: palette.neonCyan,     // Using neon cyan for X
+  playerO: palette.neonRed,      // Using neon red for O
+  success: palette.jadeGreen,    // Success states
+  warning: palette.electricYellow, // Warning states
+  gold: palette.goldFoil,        // Premium/achievements
+  buttonPrimary: palette.richGreen,
+  buttonPrimaryHighlight: palette.jadeGreen,
+  buttonPrimaryShadow: palette.darkGreen,
+  buttonSecondary: palette.amber,
+  danger: palette.dangerRed
 } as const

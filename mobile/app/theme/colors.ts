@@ -23,6 +23,13 @@ const palette = {
   jadeGreen: "#00FF88",   // Success states
   goldFoil: "#FFD700",    // Premium/legendary
 
+  // Additional Game Colors
+  richGreen: "#00AA44",   // Rich green base for buttons
+  darkGreen: "#006622",   // Dark green shadow
+  lightGreen: "#E0FFE0",  // Light green tint
+  amber: "#F59E0B",       // Orange/amber for highlights
+  dangerRed: "#EF4444",   // Red for errors/danger
+
   // Character-specific colors
   yukiCyan: "#00D9FF",    // Yuki (Novice)
   kenjiPurple: "#9945FF", // Kenji (Methodical)
@@ -112,9 +119,14 @@ export const colors = {
   /**
    * Game-specific colors
    */
-  playerX: palette.neonCyan, // Player X - Cyan
-  playerO: palette.neonRed,  // Player O - Red
-  success: palette.jadeGreen, // Success states
-  warning: palette.electricYellow, // Warning states
-  gold: palette.goldFoil, // Premium/achievements
+  playerX: palette.neonCyan,
+  playerO: palette.neonRed,
+  success: palette.jadeGreen,
+  warning: palette.electricYellow,
+  gold: palette.goldFoil,
+  buttonPrimary: palette.richGreen,
+  buttonPrimaryHighlight: palette.jadeGreen,
+  buttonPrimaryShadow: palette.darkGreen,
+  buttonSecondary: palette.amber,
+  danger: palette.dangerRed
 } as const

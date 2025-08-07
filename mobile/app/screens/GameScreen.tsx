@@ -421,7 +421,7 @@ export const GameScreen = ({ navigation, route }: GameScreenProps) => {
     return {
       width: `${timerProgress.value * 100}%`,
       backgroundColor:
-        timerProgress.value > 0.5 ? "#00FF88" : timerProgress.value > 0.2 ? "#FFD600" : "#FF006E",
+        timerProgress.value > 0.5 ? theme.colors.success : timerProgress.value > 0.2 ? theme.colors.warning : theme.colors.error,
     }
   })
 
@@ -617,7 +617,7 @@ export const GameScreen = ({ navigation, route }: GameScreenProps) => {
                 style={[
                   styles.moveTimerText,
                   {
-                    color: localMoveTimeRemaining <= 10 ? "#FF006E" : theme.colors.textDim,
+                    color: localMoveTimeRemaining <= 10 ? theme.colors.error : theme.colors.textDim,
                     opacity: gameData?.currentPlayer === "X" ? 1 : 0,
                   },
                 ]}

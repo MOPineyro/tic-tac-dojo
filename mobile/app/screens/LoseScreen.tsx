@@ -119,7 +119,7 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
         {/* Result Section - 30% */}
         <View style={styles.resultSection}>
           <Animated.View style={resultAnimatedStyle}>
-            <Text style={[styles.defeatText, { color: "#EF4444" }]} preset="heading">
+            <Text style={[styles.defeatText, { color: theme.colors.danger }]} preset="heading">
               {winner === "DRAW" ? "DRAW" : "DEFEATED"}
             </Text>
           </Animated.View>
@@ -151,7 +151,7 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
           </View>
 
           <View style={styles.encouragementContainer}>
-            <Text style={[styles.encouragementText, { color: "#F59E0B" }]}>
+            <Text style={[styles.encouragementText, { color: theme.colors.buttonSecondary }]}>
               {winner === "DRAW"
                 ? "A draw is still a lesson. Victory requires decisive action."
                 : "The way of the warrior is found in death. Defeat teaches wisdom."}
@@ -164,12 +164,33 @@ export const LoseScreen = ({ navigation, route }: LoseScreenProps) => {
 
         {/* Actions Section - 40% */}
         <Animated.View style={[styles.actionsSection, buttonAnimatedStyle]}>
-          <Pressable style={styles.retryButton} onPress={handleTryAgain}>
-            <Text style={styles.retryButtonText}>TRY AGAIN</Text>
+          <Pressable style={[
+            styles.retryButton,
+            {
+              backgroundColor: theme.colors.buttonPrimary,
+              borderTopColor: theme.colors.buttonPrimaryHighlight,
+              borderLeftColor: theme.colors.buttonPrimaryHighlight,
+              borderRightColor: theme.colors.buttonPrimaryShadow,
+              borderBottomColor: theme.colors.buttonPrimaryShadow,
+            }
+          ]} onPress={handleTryAgain}>
+            <Text style={[
+              styles.retryButtonText,
+              {
+                color: theme.colors.palette.neutral100,
+                textShadowColor: theme.colors.buttonPrimaryShadow,
+              }
+            ]}>TRY AGAIN</Text>
           </Pressable>
 
-          <Pressable style={styles.menuButton} onPress={handleMainMenu}>
-            <Text style={styles.menuButtonText}>MAIN MENU</Text>
+          <Pressable style={[
+            styles.menuButton,
+            { borderColor: theme.colors.buttonPrimary }
+          ]} onPress={handleMainMenu}>
+            <Text style={[
+              styles.menuButtonText,
+              { color: theme.colors.buttonPrimaryHighlight }
+            ]}>MAIN MENU</Text>
           </Pressable>
 
           {/* Leaderboard temporarily disabled
@@ -243,7 +264,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   leaderboardText: {
-    color: "#00AA44",
     fontSize: 14,
     fontWeight: "500",
     opacity: 0.8,
@@ -258,7 +278,6 @@ const styles = StyleSheet.create({
   menuButton: {
     alignItems: "center",
     backgroundColor: "transparent", // No background for outline style
-    borderColor: "#00AA44", // Green outline
     borderRadius: 8,
     borderWidth: 2,
     elevation: 2, // Minimal elevation
@@ -274,7 +293,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   menuButtonText: {
-    color: "#00FF88", // Green text to match outline
     fontSize: 16,
     fontWeight: "600",
     letterSpacing: 0.5,
@@ -290,19 +308,14 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     alignItems: "center",
-    backgroundColor: "#00AA44", // Rich green base
     borderRadius: 8, // Less rounded, more squarish
     elevation: 8,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     // Skeumorphic beveled effect
-    borderTopColor: "#00FF88", // Light green highlight
     borderTopWidth: 3,
-    borderLeftColor: "#00FF88", // Light green highlight
     borderLeftWidth: 3,
-    borderRightColor: "#006622", // Dark green shadow
     borderRightWidth: 3,
-    borderBottomColor: "#006622", // Dark green shadow
     borderBottomWidth: 3,
     // Drop shadow for depth
     shadowColor: "#000000",
@@ -314,20 +327,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   retryButtonText: {
-    color: "#FFFFFF", // White text for contrast
     fontSize: 18,
     fontWeight: "bold",
     letterSpacing: 1,
-    textShadowColor: "#003311", // Dark green shadow for depth
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   retrySubtext: {
-    color: "#E0FFE0", // Light green tint for Japanese text
     fontSize: 12,
     marginTop: 2,
     opacity: 0.95,
-    textShadowColor: "#003311", // Dark green shadow for depth
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
   },

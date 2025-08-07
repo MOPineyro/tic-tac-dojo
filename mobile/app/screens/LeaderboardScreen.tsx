@@ -127,7 +127,7 @@ export const LeaderboardScreen = ({ navigation }: LeaderboardScreenProps) => {
     <View style={[styles.leaderboardItem, { backgroundColor: theme.colors.palette.neutral400 }]}>
       <View style={styles.rankSection}>
         <Text
-          style={[styles.rankNumber, { color: item.rank <= 3 ? "#FFD700" : theme.colors.text }]}
+          style={[styles.rankNumber, { color: item.rank <= 3 ? theme.colors.gold : theme.colors.text }]}
         >
           #{item.rank}
         </Text>
@@ -162,7 +162,7 @@ export const LeaderboardScreen = ({ navigation }: LeaderboardScreenProps) => {
         {/* Header */}
         <Animated.View style={[styles.headerSection, headerAnimatedStyle]}>
           <Pressable style={styles.backButton} onPress={handleGoBack}>
-            <Text style={[styles.backButtonText, { color: "#00FF88" }]}>← Back</Text>
+            <Text style={[styles.backButtonText, { color: theme.colors.success }]}>← Back</Text>
           </Pressable>
 
           <Text style={[styles.headerText, { color: theme.colors.text }]} preset="heading">

@@ -29,62 +29,62 @@ interface Stage {
   level: number
 }
 
-// Mock stage data
-const stages: Stage[] = [
-  {
-    id: "stage-1",
-    name: "Cyber Dojo",
-    gridSize: 3,
-    background: "#00D9FF", // Neon Cyan
-    unlocked: true,
-    completed: false,
-    description: "Enter the digital training grounds",
-    level: 1,
-  },
-  {
-    id: "stage-2",
-    name: "Neon Temple",
-    gridSize: 3,
-    background: "#9945FF", // Neon Purple
-    unlocked: false,
-    completed: false,
-    description: "Face AI masters in electric halls",
-    level: 2,
-  },
-  {
-    id: "stage-3",
-    name: "Data Gardens",
-    gridSize: 3,
-    background: "#00FF88", // Jade Green
-    unlocked: false,
-    completed: false,
-    description: "Battle among flowing code streams",
-    level: 3,
-  },
-  {
-    id: "stage-4",
-    name: "Neural Networks",
-    gridSize: 4,
-    background: "#FFD600", // Electric Yellow
-    unlocked: false,
-    completed: false,
-    description: "Navigate complex AI pathways",
-    level: 4,
-  },
-  {
-    id: "stage-5",
-    name: "Master's Sanctum",
-    gridSize: 4,
-    background: "#FF0055", // Neon Red
-    unlocked: false,
-    completed: false,
-    description: "Face the ultimate cyber-master",
-    level: 5,
-  },
-]
-
 export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
   const { theme } = useAppTheme()
+  
+  // Mock stage data - moved inside component to access theme
+  const stages: Stage[] = [
+    {
+      id: "stage-1",
+      name: "Cyber Dojo",
+      gridSize: 3,
+      background: theme.colors.palette.neonCyan,
+      unlocked: true,
+      completed: false,
+      description: "Enter the digital training grounds",
+      level: 1,
+    },
+    {
+      id: "stage-2",
+      name: "Neon Temple",
+      gridSize: 3,
+      background: theme.colors.palette.neonPurple,
+      unlocked: false,
+      completed: false,
+      description: "Face AI masters in electric halls",
+      level: 2,
+    },
+    {
+      id: "stage-3",
+      name: "Data Gardens",
+      gridSize: 3,
+      background: theme.colors.palette.jadeGreen,
+      unlocked: false,
+      completed: false,
+      description: "Battle among flowing code streams",
+      level: 3,
+    },
+    {
+      id: "stage-4",
+      name: "Neural Networks",
+      gridSize: 4,
+      background: theme.colors.palette.electricYellow,
+      unlocked: false,
+      completed: false,
+      description: "Navigate complex AI pathways",
+      level: 4,
+    },
+    {
+      id: "stage-5",
+      name: "Master's Sanctum",
+      gridSize: 4,
+      background: theme.colors.palette.neonRed,
+      unlocked: false,
+      completed: false,
+      description: "Face the ultimate cyber-master",
+      level: 5,
+    },
+  ]
   const [currentStageIndex, setCurrentStageIndex] = useState(0)
   const [playerProgress, setPlayerProgress] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -277,8 +277,8 @@ export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
       style={[
         styles.progressDiamond,
         {
-          backgroundColor: filled ? "#FFD600" : "transparent",
-          borderColor: filled ? "#FFD600" : theme.colors.border,
+          backgroundColor: filled ? theme.colors.palette.electricYellow : "transparent",
+          borderColor: filled ? theme.colors.palette.electricYellow : theme.colors.border,
         },
       ]}
     />
@@ -289,13 +289,13 @@ export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
     const getBorderColor = (bgColor: string) => {
       // For bright colors, use dark borders; for dark colors, use light borders
       switch (bgColor) {
-        case "#00D9FF": // Cyan
-        case "#00FF88": // Green
-        case "#FFD600": // Yellow
-          return "#1A1A24" // Dark border for bright backgrounds
-        case "#9945FF": // Purple
-        case "#FF0055": // Red
-          return "#FFFFFF" // White border for darker backgrounds
+        case theme.colors.palette.neonCyan:
+        case theme.colors.palette.jadeGreen:
+        case theme.colors.palette.electricYellow:
+          return theme.colors.palette.neutral500
+        case theme.colors.palette.neonPurple:
+        case theme.colors.palette.neonRed:
+          return theme.colors.palette.neutral100
         default:
           return theme.colors.border
       }
@@ -385,7 +385,7 @@ export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
 
           <View style={styles.statusContainer}>
             {!currentStage.unlocked && (
-              <Text style={[styles.statusText, { color: "#FF006E" }]}>
+              <Text style={[styles.statusText, { color: theme.colors.error }]}>
                 🔒 Complete previous stage to unlock
               </Text>
             )}
@@ -439,7 +439,10 @@ export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
             onPress={() => navigateStage("prev")}
             disabled={currentStageIndex === 0}
           >
-            <Text style={styles.navButtonText}>←</Text>
+            <Text style={[
+              styles.navButtonText,
+              { color: theme.colors.palette.neutral100 }
+            ]}>←</Text>
           </Pressable>
 
           <Pressable
@@ -451,7 +454,10 @@ export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
             ]}
             onPress={handleStageSelect}
           >
-            <Text style={styles.selectButtonText}>
+            <Text style={[
+              styles.selectButtonText,
+              { color: theme.colors.palette.neutral100 }
+            ]}>
               {currentStage.unlocked ? "ENTER DOJO" : "LOCKED"}
             </Text>
           </Pressable>
@@ -470,7 +476,10 @@ export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
             onPress={() => navigateStage("next")}
             disabled={currentStageIndex === stagesWithProgress.length - 1}
           >
-            <Text style={styles.navButtonText}>→</Text>
+            <Text style={[
+              styles.navButtonText,
+              { color: theme.colors.palette.neutral100 }
+            ]}>→</Text>
           </Pressable>
         </View>
       </View>
@@ -555,7 +564,7 @@ export const StageSelectScreen = ({ navigation }: StageSelectScreenProps) => {
                 onPress={handleUnlockAttempt}
                 disabled={unlockLoading || !unlockCode.trim()}
               >
-                <Text style={[styles.modalButtonText, { color: "#FFFFFF" }]}>
+                <Text style={[styles.modalButtonText, { color: theme.colors.palette.neutral100 }]}>
                   {unlockLoading ? "Unlocking..." : "Unlock"}
                 </Text>
               </Pressable>
@@ -624,7 +633,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   leaderboardText: {
-    color: "#00FF88",
     fontSize: 14,
     fontWeight: "600",
     opacity: 0.8,
@@ -670,7 +678,6 @@ const styles = StyleSheet.create({
     width: 50,
   },
   navButtonText: {
-    color: "#FFFFFF",
     fontSize: 20,
     fontWeight: "bold",
     includeFontPadding: false,
@@ -748,7 +755,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   selectButtonText: {
-    color: "#FFFFFF", // White text for contrast
     fontSize: 16,
     fontWeight: "bold",
     letterSpacing: 1,

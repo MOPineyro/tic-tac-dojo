@@ -129,7 +129,7 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
           <Text style={styles.burstEmoji}>🎆</Text>
         </Animated.View>
         <Animated.View style={resultAnimatedStyle}>
-          <Text style={[styles.victoryText, { color: "#F59E0B" }]} preset="heading">
+          <Text style={[styles.victoryText, { color: theme.colors.buttonSecondary }]} preset="heading">
             VICTORY!
           </Text>
         </Animated.View>
@@ -149,7 +149,7 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
 
           <View style={styles.scoreRow}>
             <Text style={[styles.scoreLabel, { color: theme.colors.text }]}>Time Bonus:</Text>
-            <Text style={[styles.scoreValue, { color: "#10B981" }]}>
+            <Text style={[styles.scoreValue, { color: theme.colors.success }]}>
               +{scoreBreakdown.timeBonus}
             </Text>
           </View>
@@ -157,7 +157,7 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
           {scoreBreakdown.perfectBonus && (
             <View style={styles.scoreRow}>
               <Text style={[styles.scoreLabel, { color: theme.colors.text }]}>Perfect Clear!</Text>
-              <Text style={[styles.scoreValue, { color: "#F59E0B" }]}>
+              <Text style={[styles.scoreValue, { color: theme.colors.buttonSecondary }]}>
                 +{scoreBreakdown.perfectBonus}
               </Text>
             </View>
@@ -165,7 +165,7 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
 
           <View style={[styles.scoreRow, styles.totalRow]}>
             <Text style={[styles.totalLabel, { color: theme.colors.text }]}>Total Score:</Text>
-            <Text style={[styles.totalValue, { color: "#F59E0B" }]}>
+            <Text style={[styles.totalValue, { color: theme.colors.buttonSecondary }]}>
               {scoreBreakdown.totalScore}
             </Text>
           </View>
@@ -174,15 +174,30 @@ export const WinScreen = ({ navigation, route }: WinScreenProps) => {
         <View style={styles.timeContainer}>
           <Text style={[styles.timeLabel, { color: theme.colors.textDim }]}>Time: {timeUsed}s</Text>
           {timeUsed < 15 && (
-            <Text style={[styles.achievementText, { color: "#F59E0B" }]}>Lightning Fast! ⚡</Text>
+            <Text style={[styles.achievementText, { color: theme.colors.buttonSecondary }]}>Lightning Fast! ⚡</Text>
           )}
         </View>
       </View>
 
       {/* Actions Section - 40% */}
       <Animated.View style={[styles.actionsSection, buttonAnimatedStyle]}>
-        <Pressable style={styles.continueButton} onPress={handleContinue}>
-          <Text style={styles.continueButtonText}>CONTINUE</Text>
+        <Pressable style={[
+          styles.continueButton,
+          {
+            backgroundColor: theme.colors.buttonPrimary,
+            borderTopColor: theme.colors.buttonPrimaryHighlight,
+            borderLeftColor: theme.colors.buttonPrimaryHighlight,
+            borderRightColor: theme.colors.buttonPrimaryShadow,
+            borderBottomColor: theme.colors.buttonPrimaryShadow,
+          }
+        ]} onPress={handleContinue}>
+          <Text style={[
+            styles.continueButtonText,
+            {
+              color: theme.colors.palette.neutral100,
+              textShadowColor: theme.colors.buttonPrimaryShadow,
+            }
+          ]}>CONTINUE</Text>
         </Pressable>
 
         {/* Leaderboard temporarily disabled
@@ -228,20 +243,15 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     alignItems: "center",
-    backgroundColor: "#00AA44", // Rich green base
     borderRadius: 8, // Less rounded, more squarish
     elevation: 8,
     minWidth: 200,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     // Skeumorphic beveled effect
-    borderTopColor: "#00FF88", // Light green highlight
     borderTopWidth: 3,
-    borderLeftColor: "#00FF88", // Light green highlight
     borderLeftWidth: 3,
-    borderRightColor: "#006622", // Dark green shadow
     borderRightWidth: 3,
-    borderBottomColor: "#006622", // Dark green shadow
     borderBottomWidth: 3,
     // Drop shadow for depth
     shadowColor: "#000000",
@@ -253,11 +263,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   continueButtonText: {
-    color: "#FFFFFF", // White text for contrast
     fontSize: 18,
     fontWeight: "bold",
     letterSpacing: 1,
-    textShadowColor: "#003311", // Dark green shadow for depth
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -268,7 +276,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   leaderboardText: {
-    color: "#00AA44",
     fontSize: 14,
     fontWeight: "500",
     opacity: 0.8,

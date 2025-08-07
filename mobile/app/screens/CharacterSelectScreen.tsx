@@ -24,27 +24,27 @@ interface Character {
   portrait: string
 }
 
-const characters: Character[] = [
-  {
-    id: "samurai",
-    name: "Cyber Samurai",
-    symbol: "X",
-    color: "#00D9FF", // Neon Cyan
-    description: "Digital warrior's honor",
-    portrait: "🛡️", // Placeholder emoji
-  },
-  {
-    id: "ninja",
-    name: "Shadow Hacker",
-    symbol: "O",
-    color: "#FF0055", // Neon Red
-    description: "Code-breaking assassin",
-    portrait: "🥷", // Placeholder emoji
-  },
-]
-
 export const CharacterSelectScreen = ({ navigation }: CharacterSelectScreenProps) => {
   const { theme } = useAppTheme()
+
+  const characters: Character[] = [
+    {
+      id: "samurai",
+      name: "Cyber Samurai",
+      symbol: "X",
+      color: theme.colors.palette.neonCyan,
+      description: "Digital warrior's honor",
+      portrait: "🛡️", // Placeholder emoji
+    },
+    {
+      id: "ninja",
+      name: "Shadow Hacker",
+      symbol: "O",
+      color: theme.colors.palette.neonRed,
+      description: "Code-breaking assassin",
+      portrait: "🥷", // Placeholder emoji
+    },
+  ]
   const [selectedCharacter, setSelectedCharacter] = useState<string | null>(null)
 
   const samuraiScale = useSharedValue(1)
@@ -134,7 +134,9 @@ export const CharacterSelectScreen = ({ navigation }: CharacterSelectScreenProps
         <View style={styles.portraitContainer}>
           <Text style={styles.portraitEmoji}>{character.portrait}</Text>
           <View style={[styles.symbolOverlay, { backgroundColor: character.color }]}>
-            <Text style={styles.symbolText}>{character.symbol}</Text>
+            <Text style={[styles.symbolText, { color: theme.colors.palette.neutral100 }]}>
+              {character.symbol}
+            </Text>
           </View>
         </View>
 
@@ -199,7 +201,10 @@ export const CharacterSelectScreen = ({ navigation }: CharacterSelectScreenProps
           <Animated.View
             entering={undefined} // Would use entering animation in production
           >
-            <Text style={[styles.selectedText, { color: "#F59E0B" }]} preset="bold">
+            <Text
+              style={[styles.selectedText, { color: theme.colors.buttonSecondary }]}
+              preset="bold"
+            >
               {characters.find((c) => c.id === selectedCharacter)?.name} selected!
             </Text>
             <Text style={[styles.advancingText, { color: theme.colors.textDim }]}>
@@ -283,14 +288,6 @@ const styles = StyleSheet.create({
     minHeight: "100%",
     paddingHorizontal: spacing.lg,
   },
-  divider: {
-    alignItems: "center",
-    backgroundColor: "#F59E0B",
-    height: 2,
-    justifyContent: "center",
-    marginHorizontal: spacing.sm,
-    width: 40,
-  },
   headerSection: {
     alignItems: "center",
     justifyContent: "center",
@@ -351,15 +348,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   symbolText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  vsText: {
-    backgroundColor: "#FAF5F0",
-    fontSize: 16,
-    fontWeight: "bold",
-    paddingHorizontal: spacing.xs,
-    position: "absolute",
   },
 })

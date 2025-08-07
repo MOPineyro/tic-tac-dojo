@@ -166,12 +166,23 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
             style={({ pressed }) => [
               styles.enterButton,
               {
+                backgroundColor: theme.colors.buttonPrimary,
+                borderTopColor: theme.colors.buttonPrimaryHighlight,
+                borderLeftColor: theme.colors.buttonPrimaryHighlight,
+                borderRightColor: theme.colors.buttonPrimaryShadow,
+                borderBottomColor: theme.colors.buttonPrimaryShadow,
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
             onPress={handleEnterDojo}
           >
-            <Text style={styles.enterButtonText}>ENTER THE DOJO</Text>
+            <Text style={[
+              styles.enterButtonText,
+              {
+                color: theme.colors.palette.neutral100,
+                textShadowColor: theme.colors.buttonPrimaryShadow,
+              }
+            ]}>ENTER THE DOJO</Text>
           </Pressable>
         </Animated.View>
       </View>
@@ -230,20 +241,14 @@ const styles = StyleSheet.create({
   },
   enterButton: {
     alignItems: "center",
-    backgroundColor: "#00AA44", // Rich green base
     borderRadius: 8, // Less rounded, more squarish
     elevation: 8,
     minWidth: 200,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    // Skeumorphic beveled effect
-    borderTopColor: "#00FF88", // Light green highlight
     borderTopWidth: 3,
-    borderLeftColor: "#00FF88", // Light green highlight
     borderLeftWidth: 3,
-    borderRightColor: "#006622", // Dark green shadow
     borderRightWidth: 3,
-    borderBottomColor: "#006622", // Dark green shadow
     borderBottomWidth: 3,
     // Drop shadow for depth
     shadowColor: "#000000",
@@ -255,11 +260,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   enterButtonText: {
-    color: "#FFFFFF", // White text for contrast
     fontSize: 18,
     fontWeight: "bold",
     letterSpacing: 1,
-    textShadowColor: "#003311", // Dark green shadow for depth
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
