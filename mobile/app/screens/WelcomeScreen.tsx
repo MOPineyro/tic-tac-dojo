@@ -8,10 +8,10 @@ import Animated, {
   withDelay,
 } from "react-native-reanimated"
 
+import { DevPanel } from "@/components/DevPanel"
 import { Screen } from "@/components/Screen"
 import { Text } from "@/components/Text"
 import { AppStackScreenProps } from "@/navigators/AppNavigator"
-import { ApiTester } from "@/services/apiTest"
 import { useAppTheme } from "@/theme/context"
 import { spacing } from "@/theme/spacing"
 
@@ -19,7 +19,8 @@ interface WelcomeScreenProps extends AppStackScreenProps<"Welcome"> {}
 
 export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
   const { theme } = useAppTheme()
-  const [testingApi, setTestingApi] = useState(false)
+  const [devPanelVisible, setDevPanelVisible] = useState(false)
+  const [tapCount, setTapCount] = useState(0)
 
   // Animation values
   const logoOpacity = useSharedValue(0)
@@ -52,6 +53,17 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
     buttonTranslateY,
   ])
 
+  // Reset tap count after timeout
+  useEffect(() => {
+    if (tapCount > 0) {
+      const timer = setTimeout(() => {
+        setTapCount(0)
+      }, 2000) // Reset after 2 seconds
+      return () => clearTimeout(timer)
+    }
+    return undefined
+  }, [tapCount])
+
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
     transform: [{ translateY: logoTranslateY.value }],
@@ -79,34 +91,15 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
     navigation.navigate("StageSelect")
   }
 
-  const handleTestApi = async () => {
-    setTestingApi(true)
+  // Secret dev panel activation - tap logo 5 times quickly
+  const handleLogoPress = () => {
+    const newTapCount = tapCount + 1
+    setTapCount(newTapCount)
 
-    try {
-      const { overall, results } = await ApiTester.runFullTest()
-
-      if (overall) {
-        Alert.alert(
-          "🎉 API Test Success!",
-          "All backend endpoints are working correctly. The game is ready to play!",
-          [{ text: "Awesome!", style: "default" }],
-        )
-      } else {
-        const failedTests = Object.entries(results)
-          .filter(([_, result]) => !result.success)
-          .map(([test, result]) => `${test}: ${result.message}`)
-          .join("\n")
-
-        Alert.alert("⚠️ API Test Issues", `Some tests failed:\n\n${failedTests}`, [
-          { text: "OK", style: "default" },
-        ])
-      }
-    } catch (error) {
-      Alert.alert("❌ API Test Error", `Failed to run API tests: ${error}`, [
-        { text: "OK", style: "default" },
-      ])
-    } finally {
-      setTestingApi(false)
+    if (newTapCount >= 5) {
+      setDevPanelVisible(true)
+      setTapCount(0)
+      Alert.alert("🛠️ Dev Mode", "Developer panel activated!")
     }
   }
 
@@ -126,12 +119,17 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
 
       {/* Main Content */}
       <View style={styles.content}>
-        {/* Logo Section */}
+        {/* Logo Section - Tap 5 times for dev panel */}
         <Animated.View style={[styles.logoSection, logoAnimatedStyle]}>
-          <View style={styles.logoContainer}>
+          <Pressable onPress={handleLogoPress} style={styles.logoContainer}>
             <Text style={styles.logoEmoji}>🏯</Text>
             <Text style={styles.logoText}>道場</Text>
-          </View>
+            {tapCount > 0 && (
+              <View style={styles.tapIndicator}>
+                <Text style={styles.tapCount}>{tapCount}/5</Text>
+              </View>
+            )}
+          </Pressable>
         </Animated.View>
 
         {/* Title Section */}
@@ -190,23 +188,6 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
           >
             <Text style={styles.enterButtonText}>ENTER THE DOJO</Text>
           </Pressable>
-
-          {/* API Test Button */}
-          {/* <Pressable
-            style={({ pressed }) => [
-              styles.testButton,
-              {
-                transform: [{ scale: pressed ? 0.95 : 1 }],
-                opacity: testingApi ? 0.5 : 1,
-              },
-            ]}
-            onPress={handleTestApi}
-            disabled={testingApi}
-          >
-            <Text style={styles.testButtonText}>
-              {testingApi ? "🧪 Testing..." : "🧪 Test API"}
-            </Text>
-          </Pressable> */}
         </Animated.View>
       </View>
 
@@ -216,6 +197,9 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
           &quot;The way of strategy is the way of nature&quot; - Miyamoto Musashi
         </Text>
       </View>
+
+      {/* Developer Panel */}
+      <DevPanel visible={devPanelVisible} onClose={() => setDevPanelVisible(false)} />
     </Screen>
   )
 }
@@ -281,15 +265,6 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.4,
     shadowRadius: 6,
-  },
-  enterButtonSubtext: {
-    color: "#E0FFE0", // Light green tint for Japanese text
-    fontSize: 12,
-    marginTop: spacing.xs,
-    opacity: 0.95,
-    textShadowColor: "#003311", // Dark green shadow for depth
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
   },
   enterButtonText: {
     color: "#FFFFFF", // White text for contrast
@@ -381,28 +356,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
     textAlign: "center",
   },
-  testButton: {
-    alignItems: "center",
-    backgroundColor: "transparent",
-    borderColor: "#00AA44",
-    borderRadius: 8,
-    borderWidth: 1,
-    elevation: 2,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+  tapCount: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
   },
-  testButtonText: {
-    color: "#00FF88",
-    fontSize: 14,
-    fontWeight: "600",
-    textShadowColor: "#000000",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+  tapIndicator: {
+    backgroundColor: "#FF6B35",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    position: "absolute",
+    right: -5,
+    top: -5,
   },
   titleSection: {
     alignItems: "center",

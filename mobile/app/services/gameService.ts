@@ -416,7 +416,7 @@ export class GameService {
    * Check if a move is valid
    */
   isValidMove(grid: Grid, position: number): boolean {
-    return position >= 0 && position < 9 && grid[position] === null
+    return position >= 0 && position < grid.length && grid[position] === null
   }
 
   /**

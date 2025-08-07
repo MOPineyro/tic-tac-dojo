@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Dojo Admin Panel</title>
+    <link rel="stylesheet" href="/admin/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-content">
+                <h1><i class="fas fa-shield-alt"></i> Tic-Tac-Dojo Admin Panel</h1>
+                <div class="header-actions">
+                    <button id="refresh-btn" class="btn btn-secondary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button id="logout-btn" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Login Modal -->
+        <div id="login-modal" class="modal active">
+            <div class="modal-content">
+                <h2><i class="fas fa-lock"></i> Admin Authentication</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="admin-key">Admin Key:</label>
+                        <input type="password" id="admin-key" placeholder="Enter admin key" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                <div id="login-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Navigation Tabs -->
+            <nav class="admin-nav">
+                <button class="nav-tab active" data-tab="dashboard">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </button>
+                <button class="nav-tab" data-tab="users">
+                    <i class="fas fa-users"></i> User Management
+                </button>
+                <button class="nav-tab" data-tab="logs">
+                    <i class="fas fa-history"></i> Admin Logs
+                </button>
+            </nav>
+
+            <!-- Dashboard Tab -->
+            <section id="dashboard-tab" class="tab-content active">
+                <div class="dashboard-grid">
+                    <!-- System Stats Cards -->
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="total-players">-</h3>
+                            <p>Total Players</p>
+                            <span id="active-players" class="stat-sub">- active this week</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-gamepad"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="total-games">-</h3>
+                            <p>Total Games</p>
+                            <span id="active-games" class="stat-sub">- currently active</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="average-score">-</h3>
+                            <p>Average Score</p>
+                            <span id="total-score" class="stat-sub">- total points</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-day"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="new-today">-</h3>
+                            <p>New Players Today</p>
+                            <span id="games-today" class="stat-sub">- games today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Level Distribution Chart -->
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-bar"></i> Player Distribution by Level</h3>
+                    <div id="level-chart" class="level-chart">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Win Rates Chart -->
+                <div class="chart-container">
+                    <h3><i class="fas fa-percentage"></i> Player Win Rates by Level</h3>
+                    <div id="winrate-chart" class="winrate-chart">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Management Tab -->
+            <section id="users-tab" class="tab-content">
+                <div class="users-controls">
+                    <div class="search-controls">
+                        <input type="text" id="user-search" placeholder="Search users by name or ID...">
+                        <button id="search-btn" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    <div class="filter-controls">
+                        <select id="sort-by">
+                            <option value="totalScore">Sort by Score</option>
+                            <option value="currentLevel">Sort by Level</option>
+                            <option value="gamesPlayed">Sort by Games Played</option>
+                            <option value="lastActive">Sort by Last Active</option>
+                        </select>
+                        <select id="sort-order">
+                            <option value="desc">Descending</option>
+                            <option value="asc">Ascending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions Toolbar -->
+                <div id="bulk-actions-toolbar" class="bulk-actions-toolbar" style="display: none;">
+                    <div class="bulk-actions-info">
+                        <span id="selected-count">0</span> users selected
+                    </div>
+                    <div class="bulk-actions-buttons">
+                        <button id="select-all-btn" class="btn btn-secondary">
+                            <i class="fas fa-check-square"></i> Select All
+                        </button>
+                        <button id="clear-selection-btn" class="btn btn-secondary">
+                            <i class="fas fa-square"></i> Clear Selection
+                        </button>
+                        <button id="bulk-delete-btn" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete Selected
+                        </button>
+                    </div>
+                </div>
+
+                <div class="users-table-container">
+                    <table id="users-table" class="users-table">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-column">
+                                    <input type="checkbox" id="select-all-checkbox" title="Select/Deselect All">
+                                </th>
+                                <th>Player ID</th>
+                                <th>Name</th>
+                                <th>Level</th>
+                                <th>Score</th>
+                                <th>Games</th>
+                                <th>Win Rate</th>
+                                <th>Last Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination">
+                    <button id="prev-page" class="btn btn-secondary">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <span id="page-info">Page 1 of 1</span>
+                    <button id="next-page" class="btn btn-secondary">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Admin Logs Tab -->
+            <section id="logs-tab" class="tab-content">
+                <div class="logs-container">
+                    <h3><i class="fas fa-history"></i> Recent Admin Actions</h3>
+                    <div id="logs-list" class="logs-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                    <div class="pagination">
+                        <button id="logs-prev-page" class="btn btn-secondary">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <span id="logs-page-info">Page 1 of 1</span>
+                        <button id="logs-next-page" class="btn btn-secondary">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- User Edit Modal -->
+    <div id="user-edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-edit"></i> Edit User</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="user-edit-form">
+                <input type="hidden" id="edit-user-id">
+                <div class="form-group">
+                    <label for="edit-player-name">Player Name:</label>
+                    <input type="text" id="edit-player-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-total-score">Total Score:</label>
+                    <input type="number" id="edit-total-score" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-current-level">Current Level:</label>
+                    <select id="edit-current-level" required>
+                        <option value="1">Level 1 - Novice</option>
+                        <option value="2">Level 2 - Student</option>
+                        <option value="3">Level 3 - Apprentice</option>
+                        <option value="4">Level 4 - Expert</option>
+                        <option value="5">Level 5 - Master</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Points Adjustment Modal -->
+    <div id="points-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-coins"></i> Adjust Points</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="points-form">
+                <input type="hidden" id="points-user-id">
+                <div class="form-group">
+                    <label for="points-adjustment">Points Adjustment:</label>
+                    <input type="number" id="points-adjustment" placeholder="Enter positive or negative number" required>
+                    <small>Enter positive numbers to add points, negative to subtract</small>
+                </div>
+                <div class="form-group">
+                    <label for="points-reason">Reason:</label>
+                    <input type="text" id="points-reason" placeholder="Reason for adjustment" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Adjust Points</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script src="/admin/script.js"></script>
+</body>
+</html>

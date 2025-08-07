@@ -3,6 +3,16 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": ".",
+  "rewrites": [
+    {
+      "source": "/admin$",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/admin/$1"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
@@ -17,7 +27,16 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Forwarded-For"
+          "value": "Content-Type, Authorization, X-Forwarded-For, x-admin-key"
+        }
+      ]
+    },
+    {
+      "source": "/admin/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }

@@ -518,7 +518,6 @@ export const GameScreen = ({ navigation, route }: GameScreenProps) => {
       gameState === "finished" && getWinningLine(gameData?.grid || [])?.includes(index)
 
     const handlePress = () => {
-      console.log(`Cell pressed: ${index}, Grid size: ${gameData?.gridSize}, Value: ${value}`)
       animateCellPress(index)
       handleCellPress(index)
     }
