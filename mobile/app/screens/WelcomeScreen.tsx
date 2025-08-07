@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { StyleSheet, View, Pressable, Alert } from "react-native"
+import { StyleSheet, View, Pressable, Alert, Image } from "react-native"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,8 +25,6 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
   // Animation values
   const logoOpacity = useSharedValue(0)
   const logoTranslateY = useSharedValue(-50)
-  const titleOpacity = useSharedValue(0)
-  const titleScale = useSharedValue(0.8)
   const subtitleOpacity = useSharedValue(0)
   const descriptionOpacity = useSharedValue(0)
   const buttonOpacity = useSharedValue(0)
@@ -36,17 +34,13 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
     // Welcome animation sequence
     logoOpacity.value = withTiming(1, { duration: 800 })
     logoTranslateY.value = withSpring(0, { damping: 15 })
-    titleOpacity.value = withDelay(400, withTiming(1, { duration: 600 }))
-    titleScale.value = withDelay(400, withSpring(1, { damping: 12 }))
-    subtitleOpacity.value = withDelay(800, withTiming(1, { duration: 500 }))
-    descriptionOpacity.value = withDelay(1200, withTiming(1, { duration: 500 }))
-    buttonOpacity.value = withDelay(1600, withTiming(1, { duration: 400 }))
-    buttonTranslateY.value = withDelay(1600, withSpring(0))
+    subtitleOpacity.value = withDelay(600, withTiming(1, { duration: 500 }))
+    descriptionOpacity.value = withDelay(1000, withTiming(1, { duration: 500 }))
+    buttonOpacity.value = withDelay(1400, withTiming(1, { duration: 400 }))
+    buttonTranslateY.value = withDelay(1400, withSpring(0))
   }, [
     logoOpacity,
     logoTranslateY,
-    titleOpacity,
-    titleScale,
     subtitleOpacity,
     descriptionOpacity,
     buttonOpacity,
@@ -67,11 +61,6 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
   const logoAnimatedStyle = useAnimatedStyle(() => ({
     opacity: logoOpacity.value,
     transform: [{ translateY: logoTranslateY.value }],
-  }))
-
-  const titleAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: titleOpacity.value,
-    transform: [{ scale: titleScale.value }],
   }))
 
   const subtitleAnimatedStyle = useAnimatedStyle(() => ({
@@ -122,21 +111,17 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
         {/* Logo Section - Tap 5 times for dev panel */}
         <Animated.View style={[styles.logoSection, logoAnimatedStyle]}>
           <Pressable onPress={handleLogoPress} style={styles.logoContainer}>
-            <Text style={styles.logoEmoji}>🏯</Text>
-            <Text style={styles.logoText}>道場</Text>
+            <Image
+              source={require("../../assets/images/logo_bright.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
             {tapCount > 0 && (
               <View style={styles.tapIndicator}>
                 <Text style={styles.tapCount}>{tapCount}/5</Text>
               </View>
             )}
           </Pressable>
-        </Animated.View>
-
-        {/* Title Section */}
-        <Animated.View style={[styles.titleSection, titleAnimatedStyle]}>
-          <Text style={[styles.mainTitle, { color: theme.colors.text }]} preset="heading">
-            Tic-Tac-Dojo
-          </Text>
         </Animated.View>
 
         {/* Subtitle */}
@@ -194,7 +179,10 @@ export const WelcomeScreen = ({ navigation }: WelcomeScreenProps) => {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={[styles.footerText, { color: theme.colors.textDim }]}>
-          &quot;The way of strategy is the way of nature&quot; - Miyamoto Musashi
+          &quot;The way of strategy is the way of nature&quot;
+        </Text>
+        <Text style={[styles.footerAuthor, { color: theme.colors.textDim }]}>
+          - Miyamoto Musashi
         </Text>
       </View>
 
@@ -298,52 +286,30 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
+  footerAuthor: {
+    fontSize: 12,
+    fontStyle: "italic",
+    opacity: 0.8,
+    textAlign: "center",
+  },
   footerText: {
     fontSize: 14,
     fontStyle: "italic",
+    marginBottom: spacing.xs,
     textAlign: "center",
   },
   logoContainer: {
     alignItems: "center",
-    backgroundColor: "rgba(45, 45, 58, 0.9)",
-    borderColor: "#00D9FF",
-    borderRadius: 20,
-    borderWidth: 2,
-    elevation: 4,
-    minHeight: 120,
-    minWidth: 120,
-    overflow: "visible",
-    padding: spacing.lg,
-    shadowColor: "#00D9FF",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
+    justifyContent: "center",
+    position: "relative",
   },
-  logoEmoji: {
-    fontSize: 48,
-    lineHeight: 56,
-    marginBottom: spacing.xs,
-    textAlign: "center",
+  logoImage: {
+    height: 180,
+    width: 180,
   },
   logoSection: {
     alignItems: "center",
     marginBottom: spacing.xl,
-  },
-  logoText: {
-    color: "#B91C1C",
-    fontSize: 32,
-    fontWeight: "bold",
-  },
-  mainTitle: {
-    fontSize: 36,
-    fontWeight: "bold",
-    textAlign: "center",
-    textShadowColor: "rgba(0, 0, 0, 0.1)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
   patternText: {
     color: "#1F2937",
@@ -367,11 +333,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     position: "absolute",
-    right: -5,
-    top: -5,
-  },
-  titleSection: {
-    alignItems: "center",
-    marginBottom: spacing.md,
+    right: 10,
+    top: 10,
   },
 })

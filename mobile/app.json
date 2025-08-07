@@ -1,11 +1,12 @@
 {
-  "name": "mobile",
-  "slug": "mobile",
+  "name": "tic-tac-dojo",
+  "displayName": "Tic Tac Dojo",
+  "slug": "tic-tac-dojo",
   "scheme": "mobile",
   "version": "1.0.0",
   "orientation": "portrait",
   "userInterfaceStyle": "automatic",
-  "icon": "./assets/images/app-icon-all.png",
+  "icon": "./assets/icon_set/appstore.png",
   "updates": {
     "fallbackToCacheTimeout": 0
   },
@@ -15,22 +16,55 @@
     "**/*"
   ],
   "android": {
-    "icon": "./assets/images/app-icon-android-legacy.png",
+    "icon": "./assets/icon_set/playstore.png",
     "package": "com.tictacdojo",
+    "versionCode": 1,
     "adaptiveIcon": {
-      "foregroundImage": "./assets/images/app-icon-android-adaptive-foreground.png",
-      "backgroundImage": "./assets/images/app-icon-android-adaptive-background.png"
+      "foregroundImage": "./assets/icon_set/playstore.png",
+      "backgroundColor": "#191015"
     },
     "allowBackup": false,
-    "edgeToEdgeEnabled": true
+    "edgeToEdgeEnabled": true,
+    "splash": {
+      "image": "./assets/images/logo_bright.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1F2937",
+      "dark": {
+        "image": "./assets/images/logo_bright.png",
+        "backgroundColor": "#1F2937"
+      }
+    }
   },
   "ios": {
-    "icon": "./assets/images/app-icon-ios.png",
+    "icon": "./assets/icon_set/appstore.png",
     "supportsTablet": true,
-    "bundleIdentifier": "com.tictacdojo"
+    "bundleIdentifier": "com.tictacdojo",
+    "buildNumber": "1",
+    "splash": {
+      "image": "./assets/images/logo_bright.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1F2937",
+      "dark": {
+        "image": "./assets/images/logo_bright.png",
+        "backgroundColor": "#1F2937"
+      }
+    },
+    "privacyManifests": {
+      "NSPrivacyAccessedAPITypes": [
+        {
+          "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+          "NSPrivacyAccessedAPITypeReasons": [
+            "CA92.1"
+          ]
+        }
+      ]
+    },
+    "infoPlist": {
+      "ITSAppUsesNonExemptEncryption": false
+    }
   },
   "web": {
-    "favicon": "./assets/images/app-icon-web-favicon.png",
+    "favicon": "./assets/icon_set/appstore.png",
     "bundler": "metro"
   },
   "plugins": [
@@ -39,10 +73,14 @@
     [
       "expo-splash-screen",
       {
-        "image": "./assets/images/app-icon-android-adaptive-foreground.png",
-        "imageWidth": 300,
+        "image": "./assets/images/logo_bright.png",
+        "imageWidth": 200,
         "resizeMode": "contain",
-        "backgroundColor": "#191015"
+        "backgroundColor": "#1F2937",
+        "dark": {
+          "image": "./assets/images/logo_bright.png",
+          "backgroundColor": "#1F2937"
+        }
       }
     ],
     [
@@ -61,6 +99,9 @@
   "extra": {
     "ignite": {
       "version": "11.0.1"
+    },
+    "eas": {
+      "projectId": "ba3eb0ed-f58b-4129-b188-c6ef6ea605a0"
     }
   }
 }
