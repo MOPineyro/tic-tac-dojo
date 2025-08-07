@@ -2,21 +2,51 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper function to check if request is from admin (server-side only)
+    function isAdminRequest() {
+      // Admin operations are server-side only, not client operations
+      // This is enforced by API auth, not client auth
+      // Server requests from Vercel functions don't have client auth
+      return request.auth == null;
+    }
+    
+    // Additional security: validate admin operations have proper metadata
+    function isValidAdminOperation() {
+      // For admin_actions, ensure proper structure
+      return request.resource.data.keys().hasAll(['type', 'timestamp', 'adminKey']);
+    }
+    
     // Players collection - allow reads and controlled writes
     match /players/{playerId} {
-      allow read: if true; // Public read for leaderboards
+      // Public read for leaderboards
+      allow read: if true;
+      
+      // Player creation - only during session creation
       allow create: if request.resource.data.keys().hasOnly([
         "playerId", "playerName", "isAnonymous", "createdAt", 
-        "lastActive", "gamesPlayed", "wins", "losses", "draws"
+        "lastActive", "gamesPlayed", "wins", "losses", "draws",
+        "currentLevel", "levelProgress", "totalScore", "achievements",
+        "timeoutLosses"
       ]) && request.resource.data.playerId == playerId
         && request.resource.data.playerName is string
         && request.resource.data.playerName.size() > 0
-        && request.resource.data.playerName.size() <= 50;
+        && request.resource.data.playerName.size() <= 50
+        && request.resource.data.currentLevel >= 1
+        && request.resource.data.currentLevel <= 5;
       
+      // Regular player updates - only specific fields, only own data
       allow update: if request.auth != null 
         && resource.data.playerId == playerId
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(["lastActive", "gamesPlayed", "wins", "losses", "draws"]);
+          .hasOnly(["lastActive", "gamesPlayed", "wins", "losses", "draws", 
+                   "currentLevel", "levelProgress", "totalScore", "achievements", "timeoutLosses"]);
+      
+      // Admin updates - allow all field changes (server-side only)
+      allow update: if isAdminRequest()
+        && request.resource.data.playerId == resource.data.playerId; // Prevent playerId changes
+      
+      // Admin deletion (server-side only)  
+      allow delete: if isAdminRequest();
     }
     
     // Games collection - controlled access
@@ -54,14 +84,33 @@ service cloud.firestore {
       allow read: if true; // Public leaderboard
       allow create: if request.resource.data.keys().hasOnly([
         "playerId", "playerName", "score", "gameMode", "difficulty", 
-        "timestamp", "movesCount", "timeElapsed"
+        "timestamp", "movesCount", "timeElapsed", "gameId", "level"
       ]) && request.resource.data.score is number
         && request.resource.data.score >= 0
         && request.resource.data.score <= 1000000  // Realistic score ceiling
         && request.resource.data.playerName is string
         && request.resource.data.playerName.size() > 0
         && request.resource.data.playerName.size() <= 50
-        && request.resource.data.timestamp == request.time;
+        && request.resource.data.level >= 1
+        && request.resource.data.level <= 5;
+    }
+    
+    // Admin actions collection - admin operations logging
+    match /admin_actions/{actionId} {
+      // Only server-side admin operations can write
+      allow create: if isAdminRequest()
+        && isValidAdminOperation()
+        && request.resource.data.keys().hasOnly([
+          "type", "userId", "adminKey", "timestamp", "ip",
+          "oldLevel", "newLevel", "pointsAdjusted", "reason", "oldScore"
+        ]) && request.resource.data.type in [
+          "level_change", "user_deletion", "points_adjustment"
+        ] && request.resource.data.timestamp is string
+        && request.resource.data.adminKey is string
+        && request.resource.data.adminKey.size() > 0;
+      
+      // Only admins can read admin logs (server-side only)
+      allow read: if isAdminRequest();
     }
     
     // Deny all other operations

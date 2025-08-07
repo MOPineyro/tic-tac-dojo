@@ -7,7 +7,46 @@ import { GAME_LEVELS } from './_lib/levelSystem';
 // Admin authentication middleware
 function verifyAdminAccess(req: VercelRequest): boolean {
   const adminKey = req.headers['x-admin-key'];
-  return adminKey === process.env.ADMIN_KEY;
+  
+  // Check admin key
+  if (adminKey !== process.env.ADMIN_KEY) {
+    return false;
+  }
+  
+  // Check domain restriction
+  const origin = req.headers.origin;
+  const host = req.headers.host;
+  const referer = req.headers.referer;
+  
+  // Allowed domains for admin operations
+  const allowedDomains = [
+    'tic-tac-dojo.vercel.app',
+    'tic-tac-dojo-git-main-mopineyros-projects.vercel.app', // Git branch domains
+    'localhost:3000', // Local development
+    'localhost:3001'  // Alternative local port
+  ];
+  
+  // Add custom domain if specified
+  if (process.env.ADMIN_DOMAIN) {
+    allowedDomains.push(process.env.ADMIN_DOMAIN);
+  }
+  
+  // Check if request is from allowed domain
+  const isAllowedDomain = allowedDomains.some(domain => {
+    return (
+      host === domain ||
+      origin === `https://${domain}` ||
+      origin === `http://${domain}` ||
+      (referer && (referer.includes(`https://${domain}`) || referer.includes(`http://${domain}`)))
+    );
+  });
+  
+  if (!isAllowedDomain) {
+    console.warn('Admin access denied - invalid domain:', { origin, host, referer });
+    return false;
+  }
+  
+  return true;
 }
 
 // Get system statistics
