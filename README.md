@@ -12,6 +12,20 @@
 
 Tic-Tac-Dojo is a React Native mobile game that transforms the classic game of Tic-Tac-Toe into a progressive martial arts journey. Players advance through increasingly challenging AI opponents, each representing a different level of mastery in the ancient art of X's and O's.
 
+## Screenshots
+
+<p align="center">
+  <img src="mobile/assets/screenshots/Screenshot_home.png" alt="Home Screen" width="250" />
+  <img src="mobile/assets/screenshots/Screenshot_select.png" alt="Stage Selection" width="250" />
+  <img src="mobile/assets/screenshots/Screenshot_select_advanced.png" alt="Advanced Stage Selection" width="250" />
+</p>
+
+<p align="center">
+  <img src="mobile/assets/screenshots/Screenshot_3x3_gameplay.png" alt="3x3 Gameplay" width="250" />
+  <img src="mobile/assets/screenshots/Screenshot_4x4_gameplay.png" alt="4x4 Gameplay" width="250" />
+  <img src="mobile/assets/screenshots/Screenshot_victory.png" alt="Victory Screen" width="250" />
+</p>
+
 ## How It Works
 
 ### 🎮 Game Flow
@@ -69,12 +83,46 @@ tic-tac-dojo/
 
 ## Getting Started
 
-The game is deployed and ready to play! The backend API is hosted on Vercel and the mobile app can be built for iOS and Android platforms.
+The game is deployed and ready to play! The backend API is hosted on Vercel and the mobile app can be built for iOS, Android, and Web platforms.
 
 ### API Base URL
 ```
 https://tic-tac-dojo.vercel.app
 ```
+
+### Running the Web Version
+
+The app includes React Native Web support! To run it as a web app:
+
+```bash
+# Navigate to the mobile directory
+cd mobile
+
+# Install dependencies
+npm install
+
+# Start the web development server
+npm run web
+
+# Build for production
+npm run bundle:web
+
+# Serve the production build locally
+npm run serve:web
+```
+
+The web version uses:
+- localStorage instead of react-native-mmkv for data persistence
+- Web-compatible versions of native modules
+- Same React Native codebase with platform-specific adaptations
+
+### Deployment Options
+
+You can deploy the web build to:
+- **Vercel**: Deploy the `mobile/dist` folder after running `npm run bundle:web`
+- **Netlify**: Similar to Vercel, deploy the `dist` folder
+- **GitHub Pages**: Push the built files to a gh-pages branch
+- **Any static hosting**: The web build is a standard static site
 
 ## Game Mechanics
 
